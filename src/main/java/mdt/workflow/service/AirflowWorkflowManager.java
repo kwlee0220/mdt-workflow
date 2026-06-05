@@ -155,7 +155,7 @@ public class AirflowWorkflowManager implements WorkflowInstanceManagerProvider, 
 		AirflowWorkflowId wfId = AirflowWorkflowId.parse(wfIdStr);
 		
 		JsonNode dags = getRestfulClient().get(wfId.toUrl(m_airflowUrl), m_jsonNodeDeser);
-		return getWorkflowFromDagRun(wfId.getDagId(), dags);
+		return getWorkflowFromDagRun(wfId.dagId(), dags);
 	}
 
 	@Override

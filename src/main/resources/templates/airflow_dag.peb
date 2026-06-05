@@ -24,13 +24,14 @@ def {{ dag.id }}():
           {{ arg.pythonStatement }}{% if not loop.last %},{% endif %}
           
 {% endfor %}
-        },
+        }{% if task.outputs is not empty %},
         'outputs': {
 {% for arg in task.outputs %}
           {{ arg.pythonStatement }}{% if not loop.last %},{% endif %}
+{% else %}
 {% endfor %}
+        }{% endif %}
 
-        }
       }
     ).run()
     
