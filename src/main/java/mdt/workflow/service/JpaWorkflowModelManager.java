@@ -5,21 +5,14 @@ import java.util.List;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator.Feature;
-
 import lombok.RequiredArgsConstructor;
 
 import utils.func.Try;
 
 import mdt.model.ResourceAlreadyExistsException;
 import mdt.model.ResourceNotFoundException;
-import mdt.workflow.MDTWorkflowManagerException;
 import mdt.workflow.WorkflowModel;
 import mdt.workflow.WorkflowModelManager;
-import mdt.workflow.argo.ArgoWorkflowDescriptor;
 import mdt.workflow.domain.JpaWorkflowModel;
 import mdt.workflow.repository.JpaWorkflowModelRepository;
 
@@ -71,20 +64,4 @@ public class JpaWorkflowModelManager implements WorkflowModelManager {
     public void removeWorkflowModelAll() {
     	Try.run(m_repo::deleteAll);
     }
-
-	private static final YAMLFactory YAML_FACTORY = new YAMLFactory().disable(Feature.WRITE_DOC_START_MARKER);
-	public String getWorkflowScript(String id, String mdtUrl, String clientDockerImage)
-		throws ResourceNotFoundException {
-		WorkflowModel wfModel = getWorkflowModel(id);
-		
-		try {
-			ArgoWorkflowDescriptor argoWfDesc = new ArgoWorkflowDescriptor(wfModel, mdtUrl, clientDockerImage);
-			return JsonMapper.builder(YAML_FACTORY).build()
-											.writerWithDefaultPrettyPrinter()
-											.writeValueAsString(argoWfDesc);
-		}
-		catch ( JsonProcessingException e ) {
-			throw new MDTWorkflowManagerException("fails to generate workflow script", e);
-		}
-	}
 }

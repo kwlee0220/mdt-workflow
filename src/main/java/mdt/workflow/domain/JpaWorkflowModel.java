@@ -5,9 +5,6 @@ import java.nio.charset.StandardCharsets;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
-import lombok.Getter;
-import lombok.Setter;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -27,7 +24,6 @@ import mdt.workflow.WorkflowModel;
  */
 @Entity
 @Table(name="workflow_models")
-@Getter @Setter
 public class JpaWorkflowModel {
 	@Id @GeneratedValue(strategy = GenerationType.AUTO)
 	@Column(name="row_id") private Long rowId;
@@ -49,6 +45,30 @@ public class JpaWorkflowModel {
 		
 		this.id = wfDesc.getId();
 		this.jsonModelBytes = wfModelJson.getBytes(StandardCharsets.UTF_8);
+	}
+	
+	public Long getRowId() {
+		return rowId;
+	}
+	
+	public void setRowId(Long rowId) {
+		this.rowId = rowId;
+	}
+	
+	public String getId() {
+		return id;
+	}
+	
+	public void setId(String id) {
+		this.id = id;
+	}
+	
+	public byte[] getJsonModelBytes() {
+		return jsonModelBytes;
+	}
+	
+	public void setJsonModelBytes(byte[] jsonModelBytes) {
+		this.jsonModelBytes = jsonModelBytes;
 	}
 	
 	public WorkflowModel asWorkflowModel() {

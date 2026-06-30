@@ -9,8 +9,6 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 @ConfigurationProperties(prefix = "mdt.workflow-manager.argo")
-//@Getter @Setter
-//@Accessors(prefix = "m_")
 public class ArgoWorkflowManagerConfiguration {
 	private String m_argoEndpoint;
 	private String m_argoNamespace;
