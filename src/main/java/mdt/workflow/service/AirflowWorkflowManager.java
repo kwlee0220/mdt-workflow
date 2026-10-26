@@ -30,6 +30,7 @@ import okhttp3.RequestBody;
 
 import utils.LocalDateTimes;
 import utils.StrSubstitutor;
+import utils.func.Unchecked;
 import utils.http.HttpRESTfulClient;
 import utils.http.HttpRESTfulClient.ErrorEntityDeserializer;
 import utils.http.HttpRESTfulClient.ResponseBodyDeserializer;
@@ -251,7 +252,10 @@ public class AirflowWorkflowManager implements WorkflowInstanceManagerProvider, 
 			DagSpec dag = AirflowDagGenerator.generate(wfModel, writer);
 			writer.close();
 			
-			IOUtils.toFile(writer.toString(), new File(m_conf.getDagsFolder(), dag.getId() + ".py"));			
+			File dagFile = new File(m_conf.getDagsFolder(), dag.getId() + ".py");
+			s_logger.debug("trying to create airflow dag file: {}", dagFile);
+			IOUtils.toFile(writer.toString(), dagFile);		
+			s_logger.info("created Airflow DAG file: {}", dagFile);
 		}
 		catch ( IOException e ) {
 			throw new MDTWorkflowInstanceManagerException(
@@ -261,16 +265,19 @@ public class AirflowWorkflowManager implements WorkflowInstanceManagerProvider, 
 
 	@Override
 	public void onWorkflowModelRemoved(String wfModelId) throws MDTWorkflowInstanceManagerException {
+		
 		String dagIdEncoded = URLEncoder.encode(wfModelId, StandardCharsets.UTF_8);
 		String url = String.format("%s/dags/%s", m_airflowUrl, dagIdEncoded);
-		getRestfulClient().delete(url);
+		Unchecked.runOrIgnore(() -> getRestfulClient().delete(url));
 		
 		File dagFile = new File(m_conf.getDagsFolder(), wfModelId + ".py");
+		s_logger.debug("trying to remove airflow dag file: {}", dagFile);
 		if ( dagFile.isFile() ) {
 			if ( !dagFile.delete() ) {
 				throw new MDTWorkflowInstanceManagerException(
 						"failed to delete Airflow DAG file: " + dagFile.getAbsolutePath());
 			}
+			s_logger.info("removed Airflow DAG file: {}", dagFile);
 		}
 	}
 
@@ -474,7 +481,7 @@ public class AirflowWorkflowManager implements WorkflowInstanceManagerProvider, 
 				try {
 					m_restfulClient.delete(String.format("%s/variables/%s", m_airflowUrl, VARIABLE_MDT_URL));
 				}
-				catch ( RESTfulRemoteException ignored ) { }
+				catch ( RESTfulRemoteException | RESTfulIOException ignored ) { }
 				
 				
 				String reqBody = StrSubstitutor.with(Map.of("VARIABLE_MDT_URL", VARIABLE_MDT_URL,

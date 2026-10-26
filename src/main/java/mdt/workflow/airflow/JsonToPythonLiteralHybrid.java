@@ -216,29 +216,13 @@ public class JsonToPythonLiteralHybrid {
     }
 
     /**
-     * Python single-quoted string literal에 맞춘 이스케이프
+     * Python string literal에 맞춘 이스케이프.
+     * <p>
+     * 구현은 {@link PythonStringEscaper}가 담당한다. 이 프로젝트에서 Python 문자열을 이스케이프하는
+     * 경로는 반드시 이 하나로 모아, 규칙이 갈라지지 않도록 한다.
      */
     private static String escapePythonSingleQuoted(String s) {
-        StringBuilder out = new StringBuilder(s.length() + 16);
-        for (int i = 0; i < s.length(); i++) {
-            char c = s.charAt(i);
-            switch (c) {
-                case '\\': out.append("\\\\"); break;
-                case '\'': out.append("\\'"); break;
-                case '\n': out.append("\\n"); break;
-                case '\r': out.append("\\r"); break;
-                case '\t': out.append("\\t"); break;
-                case '\b': out.append("\\b"); break;
-                case '\f': out.append("\\f"); break;
-                default:
-                    if (c < 0x20) {
-                        out.append(String.format("\\u%04x", (int) c));
-                    } else {
-                        out.append(c);
-                    }
-            }
-        }
-        return out.toString();
+        return PythonStringEscaper.escape(s);
     }
 
     // -------------------------

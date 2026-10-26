@@ -50,10 +50,21 @@ public record AirflowWorkflowId(String dagId, String dagRunId) {
 	 * @return	DAG run을 가리키는 URL 문자열.
 	 */
 	public String toUrl(String prefix) {
-		String dagEncoded = URLEncoder.encode(dagId, StandardCharsets.UTF_8);
-		String dagRunEncoded = URLEncoder.encode(dagRunId, StandardCharsets.UTF_8);
+		String dagEncoded = encodePathSegment(dagId);
+		String dagRunEncoded = encodePathSegment(dagRunId);
 
 		return String.format("%s/dags/%s/dagRuns/%s", prefix, dagEncoded, dagRunEncoded);
+	}
+
+	/**
+	 * 주어진 문자열을 URL의 path segment로 사용할 수 있도록 인코딩한다.
+	 * <p>
+	 * {@link URLEncoder}는 form-encoding 규칙에 따라 공백을 {@code '+'}로 변환하는데,
+	 * path segment에서 {@code '+'}는 리터럴 플러스 문자로 해석되기 때문에 {@code "%20"}으로 치환한다.
+	 * (예: 수동 DAG run id에 공백이 포함된 경우)
+	 */
+	private static String encodePathSegment(String value) {
+		return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
 	}
 
 	/**

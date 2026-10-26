@@ -4,6 +4,8 @@ import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.digitaltwin.aas4j.v3.model.Submodel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -36,7 +38,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import utils.Throwables;
-import utils.func.Try;
 import utils.http.HttpRESTfulClient;
 import utils.http.RESTfulErrorEntity;
 
@@ -62,13 +63,15 @@ import mdt.workflow.service.MDTWorkflowManager;
 @Slf4j
 @RequiredArgsConstructor
 public class MDTWorkflowManagerController {
+	private static final Logger s_logger = LoggerFactory.getLogger(MDTWorkflowManagerController.class);
+	
 	@Autowired private ArgoWorkflowManagerConfiguration m_conf;
 	@Autowired private MDTWorkflowManager m_wfManager;
 
     @Tag(name = "워크플로우 모델 관리 API")
     @Operation(summary = "식별자에 해당하는 워크플로우 모델을 반환한다.")
     @Parameters({
-    	@Parameter(name = "id", description = "검색할 MDTInstance 식별자")
+    	@Parameter(name = "id", description = "검색할 워크플로우 모델 식별자")
     })
     @ApiResponses(value = {
     	@ApiResponse(responseCode = "200", description = "성공",
@@ -104,17 +107,25 @@ public class MDTWorkflowManagerController {
     @Tag(name = "워크플로우 모델 관리 API")
     @Operation(summary = "워크플로우 관리자에 주어진 워크플로우 모델을 등록시킨다.")
     @Parameters({
-    	@Parameter(name = "wfDescJson", description = "Json 형식으로 작성된 워크플로우 등록 정보"),
+    	@Parameter(name = "updateIfExists",
+    				description = "동일 식별자의 워크플로우 모델이 이미 등록된 경우 갱신할지 여부. (기본값: false)")
     })
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+    	required = true,
+    	description = "Json 형식으로 작성된 등록시킬 워크플로우 모델",
+		content = {
+			@Content(schema = @Schema(implementation = WorkflowModel.class), mediaType = "application/json")
+		}
+	)
     @ApiResponses(value = {
     	@ApiResponse(responseCode = "201", description = "성공",
 			content = {
 				@Content(schema = @Schema(implementation = WorkflowModel.class),
 						mediaType = "application/json")
 			}),
-    	@ApiResponse(responseCode = "400",
-    				description = "워크플로우 등록 정보 파싱에 실패하였거나,"
-    							+ "식별자에 해당하는 워크플로우 등록정보가 이미 존재합니다.")
+    	@ApiResponse(responseCode = "409",
+    				description = "동일 식별자의 워크플로우 모델이 이미 등록되어 있는 경우."
+    							+ " (updateIfExists가 false인 경우)")
     })
     @PostMapping({"/models"})
     @ResponseStatus(HttpStatus.CREATED)
@@ -151,7 +162,14 @@ public class MDTWorkflowManagerController {
     @DeleteMapping("/models")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void removeWorkflowModelAll() {
-    	Try.run(m_wfManager::removeWorkflowModelAll);
+    	for ( var wfmodel: m_wfManager.getWorkflowModelAll() ) {
+    		try {
+    			m_wfManager.removeWorkflowModel(wfmodel.getId());
+    		}
+    		catch ( Exception e ) {
+    			s_logger.warn("failed to remove workflow model: " + wfmodel.getId(), e);
+    		}
+    	}
     }
 
     @Tag(name = "워크플로우 모델 관리 API")
@@ -162,7 +180,7 @@ public class MDTWorkflowManagerController {
     @ApiResponses(value = {
     	@ApiResponse(responseCode = "200", description = "성공",
 			content = {
-				@Content(schema = @Schema(implementation = WorkflowModel.class), mediaType = "application/yaml")
+				@Content(schema = @Schema(implementation = String.class), mediaType = "application/yaml")
 			}),
     	@ApiResponse(responseCode = "404", description = "식별자에 해당하는 워크플로우가 등록되지 않은 경우.")
     })
@@ -181,9 +199,9 @@ public class MDTWorkflowManagerController {
     				example = "test:AddAndSleep")
     })
     @ApiResponses(value = {
-    	@ApiResponse(responseCode="200", description="성공",
+    	@ApiResponse(responseCode="200", description="성공. 예측된 실행시간(초).",
     		content = {
-    			@Content(schema = @Schema(implementation = Float.class), mediaType="application/json")
+    			@Content(schema = @Schema(implementation = Double.class), mediaType="application/json")
     		}
     	),
     	@ApiResponse(responseCode = "404", description = "서브모델 참조 표현식에 해당하는 서브모델이 존재하지 않은 경우.")
@@ -262,9 +280,9 @@ public class MDTWorkflowManagerController {
     	@Parameter(name = "wfModelId", description = "워크플로우 모델 식별자"),
     })
     @ApiResponses(value = {
-    	@ApiResponse(responseCode = "201", description = "성공",
+    	@ApiResponse(responseCode = "200", description = "성공",
 			content = {
-				@Content(schema = @Schema(implementation = WorkflowModel.class),
+				@Content(schema = @Schema(implementation = Workflow.class),
 						mediaType = "application/json")
 			}),
     	@ApiResponse(responseCode = "404", description = "식별자에 해당하는 워크플로우 모델이 없는 경우.")
@@ -281,12 +299,8 @@ public class MDTWorkflowManagerController {
     	@Parameter(name = "wfId", description = "워크플로우 인스턴스 식별자"),
     })
     @ApiResponses(value = {
-    	@ApiResponse(responseCode = "204", description = "성공적으로 종료됨",
-			content = {
-				@Content(schema = @Schema(implementation = WorkflowModel.class),
-						mediaType = "application/json")
-			}),
-    	@ApiResponse(responseCode = "404", description = "식별자에 해당하는 워크플로우 모델이 없는 경우.")
+    	@ApiResponse(responseCode = "204", description = "성공적으로 종료됨"),
+    	@ApiResponse(responseCode = "404", description = "식별자에 해당하는 워크플로우 인스턴스가 없는 경우.")
     })
     @PutMapping("/workflows/{wfId}/stop")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -336,10 +350,7 @@ public class MDTWorkflowManagerController {
     	@Parameter(name = "wfId", description = "삭제시킬 워크플로우 인스턴스 식별자")
     })
     @ApiResponses(value = {
-    	@ApiResponse(responseCode = "200", description = "성공",
-			content = {
-				@Content(schema = @Schema(implementation = Workflow.class), mediaType = "application/json")
-			}),
+    	@ApiResponse(responseCode = "204", description = "성공"),
     	@ApiResponse(responseCode = "404", description = "식별자에 해당하는 워크플로우 인스턴스가 없는 경우.")
     })
 	@DeleteMapping("/workflows/{wfId}")
@@ -350,11 +361,13 @@ public class MDTWorkflowManagerController {
 
     @Tag(name = "워크플로우 인스턴스 관리 API")
     @Operation(summary = "모든 워크플로우 인스턴스를 삭제시킨다.")
+    @Parameters({
+    	@Parameter(name = "modelFilter",
+    				description = "삭제 대상을 한정할 워크플로우 모델 식별자. "
+    							+ "지정하면 해당 모델로 생성된 워크플로우 인스턴스만 삭제한다.")
+    })
     @ApiResponses(value = {
-    	@ApiResponse(responseCode = "200", description = "성공",
-			content = {
-				@Content(schema = @Schema(implementation = Workflow.class), mediaType = "application/json")
-			})
+    	@ApiResponse(responseCode = "204", description = "성공")
     })
 	@DeleteMapping("/workflows")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -377,13 +390,13 @@ public class MDTWorkflowManagerController {
     @Tag(name = "워크플로우 인스턴스 관리 API")
     @Operation(summary = "주어진 POD에서 수행 중인 워크플로우 인스턴스의 로그 정보를 조회한다.")
     @Parameters({
-    	@Parameter(name = "wfId", description = "삭제시킬 워크플로우 인스턴스 식별자"),
+    	@Parameter(name = "wfId", description = "로그를 조회할 워크플로우 인스턴스 식별자"),
     	@Parameter(name = "podName", description = "수행 중인 POD 이름")
     })
     @ApiResponses(value = {
     	@ApiResponse(responseCode = "200", description = "성공",
 			content = {
-				@Content(schema = @Schema(implementation = Workflow.class), mediaType = "application/json")
+				@Content(schema = @Schema(implementation = String.class), mediaType = "text/plain")
 			}),
     	@ApiResponse(responseCode = "404", description = "식별자에 해당하는 워크플로우 인스턴스가 없는 경우.")
     })

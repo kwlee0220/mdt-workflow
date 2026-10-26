@@ -3,6 +3,8 @@ package mdt.workflow.service;
 import java.util.List;
 
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,8 @@ import mdt.workflow.WorkflowStatus;
 @Service
 @RequiredArgsConstructor
 public class MDTWorkflowManager implements WorkflowManager {
+	private static final Logger s_logger = LoggerFactory.getLogger(MDTWorkflowManager.class);
+	
 	private final WorkflowModelManager m_modelManager;
 	private final WorkflowInstanceManagerProvider m_instanceManager;
 	
@@ -72,7 +76,9 @@ public class MDTWorkflowManager implements WorkflowManager {
 	
 	@Override
 	public void removeWorkflowModel(String wfModelId) throws ResourceNotFoundException {
+		s_logger.info("removing workflow model: {}", wfModelId);
 		m_modelManager.removeWorkflowModel(wfModelId);
+		
 		Unchecked.acceptOrIgnore(wfModelId, m_instanceManager::onWorkflowModelRemoved);
 	}
 	

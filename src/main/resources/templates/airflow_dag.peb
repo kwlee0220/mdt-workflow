@@ -1,50 +1,58 @@
+import mdtpy
+
 from airflow.sdk import dag, task
-from mdtpy.airflow import AASOperationTaskInvocation, SetElementInvocation
-from mdtpy.airflow import task_output, reference, literal
+from mdtpy.airflow.operator import (
+  AASOperationOperator,
+  RestfulAsyncRpcOperator,
+  SetElementOperator,
+  OperationSubmodelOperator,
+  RestfulRpcOperator,
+  PythonScriptOperator
+)
 
 
+{# dag_id는 @dag 인자로 전달하고 함수 이름은 고정(_dag)으로 둔다. dag.id를 함수 이름으로 쓰면 #}
+{# 그 값이 'dag' 등일 때 데코레이터나 import 이름을 가려 런타임 오류가 난다. (task와 동일한 이유) #}
 @dag(
-  description="{{ dag.description }}",
+  dag_id="{{ dag.id | py }}",
+  description="{{ dag.description | py }}",
   tags=["mdt"]
 )
-def {{ dag.id }}():
+def _dag():
 {% for task in dag.tasks %}
-  @task
-  def {{ task.taskId }}() -> None:
-{% if task.getTaskType() == "AASOperationTaskSpec" %}
-    AASOperationTaskInvocation(
-      instance = "{{ task.instanceId }}",
-      submodel = "{{ task.submodelId }}",
-{% elseif task.getTaskType() == "SetTaskSpec" %}
-    SetElementInvocation(
-{% endif %}
-      argument_specs = {
-        'inputs': {
+{# task_id는 @task 인자로 전달하고 함수 이름은 인덱스 기반(_tN)으로 둔다. taskId를 함수 이름으로 쓰면 #}
+{# 그 값이 'task'/'dag' 등일 때 데코레이터나 import 이름을 가려 런타임 오류(UnboundLocalError)가 난다. #}
+{# 인자 줄은 태그가 아닌 리터럴 ','로 끝나기 때문에 Pebble이 후행 개행을 제거하지 않는다. #}
+{# Python dict는 trailing comma를 허용하므로 마지막 원소 여부를 구분할 필요가 없다. #}
+{# trigger_rule은 기본값(all_success)이 아닐 때만 출력하여, 기존 워크플로의 DAG 코드가 바뀌지 않게 한다. #}
+  @task(task_id="{{ task.taskId | py }}"{% if task.triggerRuleName is not null %}, trigger_rule="{{ task.triggerRuleName | py }}"{% endif %})
+  def _t{{ loop.index }}() -> None:
+    {{ task.operatorCall }}
+      inputs = {
 {% for arg in task.inputs %}
-          {{ arg.pythonStatement }}{% if not loop.last %},{% endif %}
-          
+        {{ arg.pythonStatement }},
 {% endfor %}
-        }{% if task.outputs is not empty %},
-        'outputs': {
+      }{% if task.outputs is not empty %},
+      outputs = {
 {% for arg in task.outputs %}
-          {{ arg.pythonStatement }}{% if not loop.last %},{% endif %}
-{% else %}
+        {{ arg.pythonStatement }},
 {% endfor %}
-        }{% endif %}
+      }{% endif %}
 
-      }
     ).run()
-    
+
 {% endfor %}
 
 {% for task in dag.tasks %}
-  t_{{ task.taskId }} = {{ task.taskId }}()
+  t_{{ task.taskId }} = _t{{ loop.index }}()
 {% endfor %}
 
+{# 줄이 표현식 태그로 끝나면 Pebble이 후행 개행을 제거하여 다음 반복과 한 줄로 붙기 때문에, #}
+{# 괄호로 감싸 줄이 리터럴 ')'로 끝나도록 한다. #}
 {% for task in dag.tasks %}
 {% for precedent in task.dependencies %}
-  t_{{ precedent }} >> t_{{ task.taskId }} 
+  (t_{{ precedent }} >> t_{{ task.taskId }})
 {% endfor %}
 {% endfor %}
 
-{{ dag.id }}()
+_dag()
