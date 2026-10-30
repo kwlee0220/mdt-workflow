@@ -29,12 +29,12 @@ dependencies {
 	implementation project(":mdt-client")
 
 	// HTTP Client
-	implementation "com.squareup.okhttp3:okhttp:${okhttp_version}"
+	implementation libs.okhttp
 	
 	// AAS model
-	implementation "org.eclipse.digitaltwin.aas4j:aas4j-model:${aas4j_version}"
+	implementation libs.aas4j.model
 	
-	implementation "io.pebbletemplates:pebble:${pebble_version}"
+	implementation libs.pebble
 
     // SpringBoot dependencies
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
@@ -46,7 +46,7 @@ dependencies {
 	runtimeOnly 'org.postgresql:postgresql'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
-	implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdoc_version}"
+	implementation libs.springdoc.webmvc.ui
 }
 
 tasks.named('test') {
