@@ -1,6 +1,5 @@
 package mdt.workflow.controller;
 
-import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.digitaltwin.aas4j.v3.model.Submodel;
@@ -50,7 +49,8 @@ import mdt.model.expr.MDTExpressionParser;
 import mdt.model.sm.ref.MDTSubmodelReference;
 import mdt.workflow.Workflow;
 import mdt.workflow.WorkflowModel;
-import mdt.workflow.config.ArgoWorkflowManagerConfiguration;
+import mdt.workflow.config.AirflowWorkflowManagerConfiguration;
+import mdt.workflow.config.WorkflowManagerConfiguration;
 import mdt.workflow.service.MDTWorkflowManager;
 
 
@@ -65,7 +65,8 @@ import mdt.workflow.service.MDTWorkflowManager;
 public class MDTWorkflowManagerController {
 	private static final Logger s_logger = LoggerFactory.getLogger(MDTWorkflowManagerController.class);
 	
-	@Autowired private ArgoWorkflowManagerConfiguration m_conf;
+	@Autowired private WorkflowManagerConfiguration m_conf;
+	@Autowired private AirflowWorkflowManagerConfiguration m_airflowConf;
 	@Autowired private MDTWorkflowManager m_wfManager;
 
     @Tag(name = "워크플로우 모델 관리 API")
@@ -173,20 +174,20 @@ public class MDTWorkflowManagerController {
     }
 
     @Tag(name = "워크플로우 모델 관리 API")
-    @Operation(summary = "식별자에 해당하는 워크플로우 정보를 Argo 워크플로우 구동 스크립트로 변환하여 반환한다.")
+    @Operation(summary = "식별자에 해당하는 워크플로우 정보를 Airflow DAG 스크립트(Python)로 변환하여 반환한다.")
     @Parameters({
     	@Parameter(name = "id", description = "변환시킬 워크플로우 등록 정보 식별자")
     })
     @ApiResponses(value = {
     	@ApiResponse(responseCode = "200", description = "성공",
 			content = {
-				@Content(schema = @Schema(implementation = String.class), mediaType = "application/yaml")
+				@Content(schema = @Schema(implementation = String.class), mediaType = "text/x-python")
 			}),
     	@ApiResponse(responseCode = "404", description = "식별자에 해당하는 워크플로우가 등록되지 않은 경우.")
     })
     @GetMapping("/models/{id}/script")
     @ResponseStatus(HttpStatus.OK)
-    public String getArgoWorklfowScript(@PathVariable("id") String id) throws JsonProcessingException {
+    public String getWorkflowScript(@PathVariable("id") String id) throws JsonProcessingException {
 		return m_wfManager.getWorkflowScript(id);
     }
     
@@ -210,7 +211,7 @@ public class MDTWorkflowManagerController {
     public Double estimateTaskExecutionTime(@PathVariable("smRef") String smRefString) {
     	System.out.println("estimateTaskExecutionTime: smRef=" + smRefString);
     	
-    	HttpMDTManager mdt = HttpMDTManager.connect(m_conf.getMdtUrl());
+    	HttpMDTManager mdt = HttpMDTManager.connect(m_airflowConf.getMdtUrl());
     	HttpMDTInstanceManager manager = mdt.getInstanceManager();
     	
     	MDTSubmodelReference smRef = MDTExpressionParser.parseSubmodelReference(smRefString).evaluate();
@@ -241,19 +242,7 @@ public class MDTWorkflowManagerController {
 	@GetMapping("/workflows")
     @ResponseStatus(HttpStatus.OK)
 	public List<Workflow> getWorkflowAll() {
-		try {
-			return m_wfManager.getWorkflowAll();
-		}
-		catch ( IllegalArgumentException e ) {
-			String msg = e.getMessage();
-			if ( msg.equals("Expected the field `items` to be an array in the JSON string but got `null`") ) {
-				// argo-java-client 라이브러리에서는 버그 때문에 workflow가 하나도 없는 경우 오류가 발생.
-				return Collections.emptyList();
-			}
-			else {
-				throw e;
-			}
-		}
+		return m_wfManager.getWorkflowAll();
 	}
 
     @Tag(name = "워크플로우 인스턴스 관리 API")

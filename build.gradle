@@ -55,7 +55,7 @@ tasks.named('test') {
 
 bootJar {
 	archiveClassifier = 'all'
-	mainClass = 'mdt.workflow.MDTArgoWorkflowManagerApplication'
+	mainClass = 'mdt.workflow.MDTWorkflowManagerApplication'
 }
 
 // IDE 자동 빌드가 src/main/resources 산출물을 build/classes/java/main 에 한 번 더
