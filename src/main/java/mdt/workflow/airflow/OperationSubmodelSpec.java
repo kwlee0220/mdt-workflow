@@ -60,7 +60,7 @@ public final class OperationSubmodelSpec extends OperatorSpec {
 		String submodelIdShort = splits[1];
 		
 		List<OperatorArgumentSpec> inputs = FStream.from(task.getInputArguments())
-													.map(arg -> fromTaskArgument(arg.getId(), arg))
+													.map(arg -> fromArgumentSpec(arg.getId(), arg))
 													.toList();
 		List<SinkArgument> outputs = FStream.from(task.getOutputArguments())
 													.map(arg -> fromOutputVariable(arg.getId(), arg))

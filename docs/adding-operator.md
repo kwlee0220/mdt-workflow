@@ -288,7 +288,7 @@ Set 네 가지이고, `RESTfulRpcTask`에는 명령이 없다.
   - `static XxxSpec of(taskId, <고유 인자>, inputs, outputs, dependencies)`: 실제 생성. 테스트나 코드에서 직접 만들 때도 쓴다.
   - `static XxxSpec from(TaskDescriptor task)`: option과 인자를 꺼내 `of()`에 넘기기만 하는 얇은 어댑터.
     - option: `task.getOptions().get(OPTION_...)`. 필수 option이 없으면 task id를 담아 `IllegalArgumentException`.
-    - 입력: `fromTaskArgument(arg.getId(), arg)`. reference·literal·task-output을 모두 처리하고, literal은
+    - 입력: `fromArgumentSpec(arg.getId(), arg)`. reference·literal·task-output을 모두 처리하고, literal은
       `@type`을 보존해 `mdtpy.value.parse_json_node()`로 복원하는 식을 만든다.
     - 출력: `fromOutputVariable(arg.getId(), arg)` → `sink(...)`.
     - 의존성: `task.getDependencies()`.
@@ -310,7 +310,7 @@ public static PythonScriptSpec from(TaskDescriptor task) {
 		throw new IllegalArgumentException("'" + OPTION_SCRIPT + "' option is required ...: " + task.getId());
 	}
 	List<OperatorArgumentSpec> inputs = FStream.from(task.getInputArguments())
-												.map(arg -> fromTaskArgument(arg.getId(), arg)).toList();
+												.map(arg -> fromArgumentSpec(arg.getId(), arg)).toList();
 	List<SinkArgument> outputs = FStream.from(task.getOutputArguments())
 												.map(arg -> fromOutputVariable(arg.getId(), arg)).toList();
 	return of(task.getId(), scriptOpt.getValue(), inputs, outputs, task.getDependencies());

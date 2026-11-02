@@ -162,10 +162,10 @@ public abstract class OperatorSpec {
 		}
 	}
 	
-	protected static OperatorArgumentSpec fromTaskArgument(String argId, ArgumentSpec argSpec) {
+	protected static OperatorArgumentSpec fromArgumentSpec(String argId, ArgumentSpec argSpec) {
 		return switch( argSpec ) {
 			case ArgumentSpec.ReferenceArgument refArgSpec
-					-> new OperatorArgumentSpec.ReferenceArgument(argId, refArgSpec.getReferenceString());
+					-> new OperatorArgumentSpec.ReferenceArgument(argId, refArgSpec.getReferenceExpr());
 			case ArgumentSpec.LiteralArgument literalSpec -> {
 				try {
 					// 타입 정보를 보존하기 위해 값 JSON이 아닌 polymorphic JSON을 사용한다.
@@ -179,13 +179,13 @@ public abstract class OperatorSpec {
 			}
 			case ArgumentSpec.TaskOutputArgument taskOutArgSpec
 					-> new OperatorArgumentSpec.TaskOutputArgument(argId, taskOutArgSpec.getTaskId(),
-																	taskOutArgSpec.getArgumentName());
+																	taskOutArgSpec.getOutputArgumentId());
 			default -> throw new IllegalArgumentException("unsupported variable: " + argSpec);
 		};
 	}
 	
 	protected static SinkArgument fromOutputVariable(String argId, ArgumentSpec.ReferenceArgument argSpec) {
-		return new SinkArgument(argId, argSpec.getReferenceString());
+		return new SinkArgument(argId, argSpec.getReferenceExpr());
 	}
 
 	/**

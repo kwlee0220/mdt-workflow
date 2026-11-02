@@ -60,7 +60,7 @@ public class OperatorArgumentSpecTest {
 		// 값 JSON만 넘기면 Long이 Python에서 Integer로 바뀌므로, @type이 보존되어야 한다.
 		ArgumentSpec spec = ArgumentSpec.LiteralArgument.builder()
 										.id("n").value(PropertyValue.LONG(12345678901L)).build();
-		String stmt = OperatorSpec.fromTaskArgument("n", spec).getPythonStatement();
+		String stmt = OperatorSpec.fromArgumentSpec("n", spec).getPythonStatement();
 		Assertions.assertEquals("\"n\": mdtpy.airflow.literal(mdtpy.value.parse_json_node("
 								+ "{'@type': 'mdt:value:long', 'value': 12345678901}))", stmt);
 	}
@@ -73,7 +73,7 @@ public class OperatorArgumentSpecTest {
 		members.put("when", PropertyValue.DATE_TIME(Instant.parse("2026-10-07T05:00:00Z")));
 		ArgumentSpec spec = ArgumentSpec.LiteralArgument.builder()
 										.id("c").value(new ElementCollectionValue(members)).build();
-		String stmt = OperatorSpec.fromTaskArgument("c", spec).getPythonStatement();
+		String stmt = OperatorSpec.fromArgumentSpec("c", spec).getPythonStatement();
 
 		Assertions.assertTrue(stmt.startsWith("\"c\": mdtpy.airflow.literal(mdtpy.value.parse_json_node("), stmt);
 		Assertions.assertTrue(stmt.contains("'@type': 'mdt:value:collection'"), stmt);

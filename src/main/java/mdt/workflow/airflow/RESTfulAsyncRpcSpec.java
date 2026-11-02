@@ -56,7 +56,7 @@ public final class RESTfulAsyncRpcSpec extends OperatorSpec {
 		String endpoint = endpointOpt.getValue();
 		
 		List<OperatorArgumentSpec> inputs = FStream.from(task.getInputArguments())
-													.map(arg -> fromTaskArgument(arg.getId(), arg))
+													.map(arg -> fromArgumentSpec(arg.getId(), arg))
 													.toList();
 		List<SinkArgument> outputs = FStream.from(task.getOutputArguments())
 													.map((arg) -> fromOutputVariable(arg.getId(), arg))
