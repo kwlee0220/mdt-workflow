@@ -20,7 +20,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-import utils.Utilities;
 import utils.stream.FStream;
 
 import mdt.workflow.WorkflowStatus;
@@ -49,7 +48,7 @@ public class MDTWorkflowListCandidatesController {
     public ResponseEntity<?> listCandidateModels() {
     	String output = FStream.from(m_wfManager.getWorkflowModelAll())
 								.map(model -> model.getId())
-								.join(Utilities.getLineSeparator());
+								.join(System.lineSeparator());
     	return ResponseEntity.ok(output);
     }
 
@@ -87,7 +86,7 @@ public class MDTWorkflowListCandidatesController {
 								.toList();
     	}
 		String output = FStream.from(wfIdList)
-								.join(Utilities.getLineSeparator());
+								.join(System.lineSeparator());
     	return ResponseEntity.ok(output);
     }
 }
