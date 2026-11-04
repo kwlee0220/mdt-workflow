@@ -59,18 +59,44 @@ public class MDTWorkflowManager implements WorkflowManager {
 		}
 	}
 	
+	/**
+	 * 워크플로우 모델을 등록하거나 같은 id의 기존 모델을 교체한다.
+	 * <p>
+	 * 모델 저장 뒤의 후처리({@code onWorkflowModelAdded})가 실패하면 교체 전 상태로 되돌린다. 기존 모델이
+	 * 있었으면 그 모델을 다시 저장하고 후처리를 다시 수행하며, 없었으면 새로 저장한 모델을 삭제한다.
+	 */
 	@Override
 	public WorkflowModel addOrReplaceWorkflowModel(WorkflowModel desc) {
+		WorkflowModel previous = findWorkflowModel(desc.getId());
 		WorkflowModel wfModel = m_modelManager.addOrReplaceWorkflowModel(desc);
 		try {
 			m_instanceManager.onWorkflowModelAdded(wfModel);
 			return wfModel;
 		}
 		catch ( Throwable e ) {
-			Try.run(() -> m_modelManager.removeWorkflowModel(wfModel.getId()));
+			if ( previous != null ) {
+				Try.run(() -> {
+					m_modelManager.addOrReplaceWorkflowModel(previous);
+					m_instanceManager.onWorkflowModelAdded(previous);
+				})
+				.ifFailed(error -> s_logger.error("failed to restore the previous workflow model: id={}, cause={}",
+													previous.getId(), error));
+			}
+			else {
+				Try.run(() -> m_modelManager.removeWorkflowModel(wfModel.getId()));
+			}
 			
 			Throwable cause = Throwables.unwrapThrowable(e);
 			throw new RuntimeException("failed to process added workflow model: " + wfModel.getId(), cause);
+		}
+	}
+	
+	private WorkflowModel findWorkflowModel(String wfModelId) {
+		try {
+			return m_modelManager.getWorkflowModel(wfModelId);
+		}
+		catch ( ResourceNotFoundException e ) {
+			return null;
 		}
 	}
 	

@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
 
@@ -48,13 +49,25 @@ public class JpaWorkflowModelManager implements WorkflowModelManager {
 		}
     }
 
+	/**
+	 * 워크플로우 모델을 등록한다. 같은 id의 모델이 있으면 그 내용을 교체한다.
+	 * <p>
+	 * 기존 모델을 지우고 다시 저장하지 않고 같은 행을 한 트랜잭션 안에서 갱신한다. 따라서 저장이 실패해도
+	 * 기존 모델은 남는다.
+	 *
+	 * @param wfModel	등록할 워크플로우 모델.
+	 * @return	저장된 워크플로우 모델.
+	 */
+	@Transactional
 	public WorkflowModel addOrReplaceWorkflowModel(WorkflowModel wfModel) {
-		if ( m_repo.existsByModelId(wfModel.getId()) ) {
-			m_repo.deleteByModelId(wfModel.getId());
-		}
-		
-		JpaWorkflowModel saved = m_repo.save(new JpaWorkflowModel(wfModel));
-		return saved.asWorkflowModel();
+		JpaWorkflowModel entity = m_repo.findByModelId(wfModel.getId())
+										.map(existing -> {
+											existing.setJsonModelBytes(new JpaWorkflowModel(wfModel)
+																			.getJsonModelBytes());
+											return existing;
+										})
+										.orElseGet(() -> new JpaWorkflowModel(wfModel));
+		return m_repo.save(entity).asWorkflowModel();
 	}
     
     public void removeWorkflowModel(String id) {
