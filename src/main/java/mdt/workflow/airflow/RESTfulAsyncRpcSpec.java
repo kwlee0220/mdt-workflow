@@ -1,14 +1,17 @@
 package mdt.workflow.airflow;
 
-import java.util.List;
 
 import utils.Preconditions;
-import utils.stream.FStream;
 
-import mdt.workflow.airflow.OperatorArgumentSpec.SinkArgument;
+import mdt.task.RESTfulAsyncRpcTask;
 import mdt.workflow.model.TaskDescriptor;
 
 /**
+ * 원격 연산을 비동기 RESTful RPC로 호출하는 task({@code mdt.task.RESTfulAsyncRpcTask})의 Airflow spec. mdtpy
+ * {@code RestfulAsyncRpcOperator(base_url, op_endpoint, ...)} 호출을 만든다.
+ * <p>
+ * task option {@code baseUrl}과 {@code endpoint}가 필요하다. {@code timeout}·{@code poll} option은 아직 operator에
+ * 전달하지 못하며, 있으면 DAG를 만들 때 경고를 남긴다.
  *
  * @author Kang-Woo Lee (ETRI)
  */
@@ -43,33 +46,11 @@ public final class RESTfulAsyncRpcSpec extends OperatorSpec {
 	public static RESTfulAsyncRpcSpec from(TaskDescriptor task) {
 		Preconditions.checkNotNullArgument(task, "task must not be null");
 
-		var baseUrlOpt = task.getOptions().get("baseUrl");
-		if ( baseUrlOpt == null ) {
-			throw new IllegalArgumentException("baseUrl option is required for RESTfulAsyncRpcSpec: " + task.getId());
-		}
-		String baseUrl = baseUrlOpt.getValue();
-
-		var endpointOpt = task.getOptions().get("endpoint");
-		if ( endpointOpt == null ) {
-			throw new IllegalArgumentException("endpoint option is required for RESTfulAsyncRpcSpec: " + task.getId());
-		}
-		String endpoint = endpointOpt.getValue();
-		
-		List<OperatorArgumentSpec> inputs = FStream.from(task.getInputArguments())
-													.map(arg -> fromArgumentSpec(arg.getId(), arg))
-													.toList();
-		List<SinkArgument> outputs = FStream.from(task.getOutputArguments())
-													.map((arg) -> fromOutputVariable(arg.getId(), arg))
-													.toList();
-		
 		return builder()
-					.taskId(task.getId())
-					.baseUrl(baseUrl)
-					.endpoint(endpoint)
-					.inputs(inputs)
-					.outputs(outputs)
-					.dependencies(task.getDependencies())
-					.triggerRule(task.getTriggerRule())
+					.fromTask(task)
+					.baseUrl(requireOption(task, RESTfulAsyncRpcTask.OPTION_BASE_URL, RESTfulAsyncRpcSpec.class))
+					.endpoint(requireOption(task, RESTfulAsyncRpcTask.OPTION_OPERATION_ENDPOINT,
+											RESTfulAsyncRpcSpec.class))
 					.build();
 	}
 

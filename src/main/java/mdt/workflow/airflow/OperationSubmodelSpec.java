@@ -1,79 +1,61 @@
 package mdt.workflow.airflow;
 
-import java.util.List;
 
 import utils.Preconditions;
-import utils.stream.FStream;
 
-import mdt.workflow.airflow.OperatorArgumentSpec.SinkArgument;
 import mdt.workflow.model.TaskDescriptor;
 
 /**
+ * Operation Submodel을 호출하는 task({@code mdt.task.OperationSubmodelTask})의 Airflow spec. mdtpy
+ * {@code OperationSubmodelOperator(instance, submodel, ...)} 호출을 만든다.
+ * <p>
+ * task option {@code operationSubmodel}({@code <instanceId>:<submodelIdShort>})에서 두 값을 꺼낸다.
  *
  * @author Kang-Woo Lee (ETRI)
  */
 public final class OperationSubmodelSpec extends OperatorSpec {
 	private final String m_instanceId;
-	private final String m_submodelId;
+	private final String m_submodelIdShort;
 	
 	private OperationSubmodelSpec(Builder builder) {
 		super(builder);
 		Preconditions.checkNotNullArgument(builder.m_instanceId, "instanceId must not be null");
-		Preconditions.checkNotNullArgument(builder.m_submodelId, "submodelId must not be null");
+		Preconditions.checkNotNullArgument(builder.m_submodelIdShort, "submodelIdShort must not be null");
 
 		m_instanceId = builder.m_instanceId;
-		m_submodelId = builder.m_submodelId;
+		m_submodelIdShort = builder.m_submodelIdShort;
 	}
 
 	public String getInstanceId() {
 		return m_instanceId;
 	}
 
-	public String getSubmodelId() {
-		return m_submodelId;
+	public String getSubmodelIdShort() {
+		return m_submodelIdShort;
 	}
 
 	@Override
 	public String getOperatorCall() {
 		return "OperationSubmodelOperator(\n"
 				+ kwargLine("instance", m_instanceId)
-				+ kwargLine("submodel", m_submodelId);
+				+ kwargLine("submodel", m_submodelIdShort);
 	}
 
 	public static OperationSubmodelSpec from(TaskDescriptor task) {
 		Preconditions.checkNotNullArgument(task, "task must not be null");
 
-		var opOpt = task.getOptions().get("operationSubmodel");
-		if ( opOpt == null ) {
-			throw new IllegalArgumentException("operationSubmodel option is required for OperationSubmodelTask: "
-												+ task.getId());
-		}
-
-		String[] splits = opOpt.getValue().split(":");
+		String smExpr = requireOption(task, TaskDescriptor.OPTION_OPERATION_SUBMODEL, OperationSubmodelSpec.class);
+		String[] splits = smExpr.split(":");
 		if ( splits.length != 2 ) {
 			String msg = String.format("invalid operationSubmodel option value: %s "
-										+ "(expected format: <instanceId>:<submodelIdShort>)",
-										opOpt.getValue());
+										+ "(expected format: <instanceId>:<submodelIdShort>)", smExpr);
 			throw new IllegalArgumentException(msg);
 		}
-		String instanceId = splits[0];
-		String submodelIdShort = splits[1];
-		
-		List<OperatorArgumentSpec> inputs = FStream.from(task.getInputArguments())
-													.map(arg -> fromArgumentSpec(arg.getId(), arg))
-													.toList();
-		List<SinkArgument> outputs = FStream.from(task.getOutputArguments())
-													.map(arg -> fromOutputVariable(arg.getId(), arg))
-													.toList();
-		
+
 		return builder()
-					.taskId(task.getId())
-					.instanceId(instanceId)
-					.submodelId(submodelIdShort)
-					.inputs(inputs)
-					.outputs(outputs)
-					.dependencies(task.getDependencies())
-					.triggerRule(task.getTriggerRule())
+					.fromTask(task)
+					.instanceId(splits[0])
+					.submodelIdShort(splits[1])
 					.build();
 	}
 
@@ -83,7 +65,7 @@ public final class OperationSubmodelSpec extends OperatorSpec {
 
 	public static final class Builder extends OperatorSpec.AbstractBuilder<Builder,OperationSubmodelSpec> {
 		private String m_instanceId;
-		private String m_submodelId;
+		private String m_submodelIdShort;
 
 		@Override
 		public OperationSubmodelSpec build() {
@@ -95,8 +77,8 @@ public final class OperationSubmodelSpec extends OperatorSpec {
 			return this;
 		}
 
-		public Builder submodelId(String submodelId) {
-			m_submodelId = submodelId;
+		public Builder submodelIdShort(String submodelIdShort) {
+			m_submodelIdShort = submodelIdShort;
 			return this;
 		}
 	}

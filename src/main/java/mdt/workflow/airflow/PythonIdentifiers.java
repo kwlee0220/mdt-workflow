@@ -3,11 +3,16 @@ package mdt.workflow.airflow;
 import java.util.Set;
 
 /**
+ * 문자열이 Python 3 식별자(ASCII 글자·숫자·밑줄, 첫 글자는 숫자가 아님, 예약어 아님)인지 확인한다.
+ * <p>
+ * DAG id·task id·인자 id처럼 생성된 Python 코드나 DAG 파일 이름에 그대로 쓰이는 값을 검사할 때 쓴다.
+ * <p>
+ * 2026-11-05 이전 이름은 {@code PythonIdentifierUtil.isValidPythonIdentifier}였다(별칭 없음).
  *
  * @author Kang-Woo Lee (ETRI)
  */
-public final class PythonIdentifierUtil {
-	private PythonIdentifierUtil() {
+public final class PythonIdentifiers {
+	private PythonIdentifiers() {
 		throw new AssertionError("Should not be called: class=" + getClass().getName());
 	}
 	
@@ -37,7 +42,7 @@ public final class PythonIdentifierUtil {
      * @param value 검사할 문자열
      * @return 파이썬 식별자이면 true, 아니면 false
      */
-    public static boolean isValidPythonIdentifier(String value) {
+    public static boolean isValid(String value) {
         if (value == null || value.isEmpty()) {
             return false;
         }

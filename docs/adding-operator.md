@@ -286,12 +286,13 @@ Set 네 가지이고, `RESTfulRpcTask`에는 명령이 없다.
   - `inputs`/`outputs`와 닫는 괄호는 템플릿이 붙인다. 반환값을 템플릿에서 `| py`로 다시 이스케이프하지 않는다.
 - **생성 메소드는 `of()` + `from()`으로 나눈다** (`PythonScriptSpec` 방식, 새 spec에 권장):
   - `static XxxSpec of(taskId, <고유 인자>, inputs, outputs, dependencies)`: 실제 생성. 테스트나 코드에서 직접 만들 때도 쓴다.
-  - `static XxxSpec from(TaskDescriptor task)`: option과 인자를 꺼내 `of()`에 넘기기만 하는 얇은 어댑터.
-    - option: `task.getOptions().get(OPTION_...)`. 필수 option이 없으면 task id를 담아 `IllegalArgumentException`.
-    - 입력: `fromArgumentSpec(arg.getId(), arg)`. reference·literal·task-output을 모두 처리하고, literal은
-      `@type`을 보존해 `mdtpy.value.parse_json_node()`로 복원하는 식을 만든다.
-    - 출력: `fromOutputVariable(arg.getId(), arg)` → `sink(...)`.
-    - 의존성: `task.getDependencies()`.
+  - `static XxxSpec from(TaskDescriptor task)`: `builder().fromTask(task)`로 공통 값을 채우고 고유 option만 처리하는 얇은 어댑터.
+    - 공통 값: `AbstractBuilder.fromTask(task)`가 task id, 입력(`fromArgumentSpec` — reference·literal·task-output,
+      literal은 `@type`을 보존해 `mdtpy.value.parse_json_node()`로 복원), 출력(`fromOutputVariable` → `sink(...)`),
+      의존 task, trigger rule을 모두 채운다. 직접 반복하지 않는다.
+    - 필수 option: `requireOption(task, OPTION_..., XxxSpec.class)`. 없으면
+      `'<key>' option is required for XxxSpec: <taskId>` 형식의 `IllegalArgumentException`이다. option 이름은
+      mdt-client 쪽 상수(`TaskDescriptor.OPTION_*`, 각 task 클래스의 `OPTION_*`)를 쓴다.
   - 실행해도 의미 없는 값(예: 빈 script)은 생성자에서 거부해, 후속 task의 엉뚱한 오류 대신 생성 시점에 드러나게 한다.
 - 참고 구현: `PythonScriptSpec`(`of()`/`from()`, option 상수, 빈 값 거부), `RESTfulRpcSpec`(숫자 timeout을
   `rawKwargLine`으로), `SetElementSpec`(고유 인자 없음).
@@ -305,32 +306,31 @@ public String getOperatorCall() {
 }
 
 public static PythonScriptSpec from(TaskDescriptor task) {
-	var scriptOpt = task.getOptions().get(OPTION_SCRIPT);
-	if ( scriptOpt == null || scriptOpt.getValue() == null ) {
-		throw new IllegalArgumentException("'" + OPTION_SCRIPT + "' option is required ...: " + task.getId());
-	}
-	List<OperatorArgumentSpec> inputs = FStream.from(task.getInputArguments())
-												.map(arg -> fromArgumentSpec(arg.getId(), arg)).toList();
-	List<SinkArgument> outputs = FStream.from(task.getOutputArguments())
-												.map(arg -> fromOutputVariable(arg.getId(), arg)).toList();
-	return of(task.getId(), scriptOpt.getValue(), inputs, outputs, task.getDependencies());
+	Preconditions.checkNotNullArgument(task, "task must not be null");
+
+	return builder()
+				.fromTask(task)
+				.script(requireOption(task, OPTION_SCRIPT, PythonScriptSpec.class))
+				.build();
 }
 ```
 
-### 4.2 분기 등록
+### 4.2 등록표에 추가
 
-`OperatorSpec.from()`에 분기를 추가한다.
+`OperatorSpec`의 `FACTORIES` 등록표(task type → `from` 함수)에 한 줄을 더한다. 지원 목록
+(`OperatorSpec.getSupportedTaskTypes()`)과 "unsupported task type" 오류 메시지에 자동으로 나타난다.
 
 ```java
-// A. Java task 클래스가 있는 경우
-else if ( XxxTask.class.getName().equals(task.getType()) ) {
-	return XxxSpec.from(task);
-}
-// B. Airflow 전용 type은 task 클래스 대신 type 문자열 상수와 비교한다.
-else if ( TaskDescriptors.PYTHON_SCRIPT_TASK_TYPE.equals(task.getType()) ) {
-	return PythonScriptSpec.from(task);
-}
+private static final Map<String,Function<TaskDescriptor,? extends OperatorSpec>> FACTORIES = Map.of(
+	...,
+	// A. Java task 클래스가 있는 경우
+	XxxTask.class.getName(), XxxSpec::from,
+	// B. Airflow 전용 type은 task 클래스 대신 type 문자열 상수로 등록한다.
+	TaskDescriptors.PYTHON_SCRIPT_TASK_TYPE, PythonScriptSpec::from
+);
 ```
+
+`Map.of`는 항목이 10개까지이므로, 넘으면 `Map.ofEntries(Map.entry(...), ...)`로 바꾼다.
 
 ### 4.3 템플릿 import
 
@@ -354,7 +354,7 @@ else if ( TaskDescriptors.PYTHON_SCRIPT_TASK_TYPE.equals(task.getType()) ) {
 
 ### 4.5 워크플로 등록 서비스의 동작 (알고 있어야 할 것)
 
-- **등록할 때만 DAG 파일을 만든다.** `AirflowWorkflowManager.onWorkflowModelAdded()`가 `<dagsFolder>/<dagId>.py`를 쓴다
+- **등록할 때만 DAG 파일을 만든다.** `AirflowWorkflowEngine.deploy()`가 `<dagsFolder>/<dagId>.py`를 쓴다
   (`dagsFolder` = `mdt.workflow-manager.airflow.dagsFolder`, 기본 `${MDT_HOME}/airflow/dags`). 생성기를 고친 뒤에는
   워크플로를 **다시 등록해야** 새 형식의 DAG가 만들어진다.
 - **같은 id의 파일이 있어도 확인 없이 덮어쓴다.** 워크플로 id가 기존 DAG와 겹치면 그 DAG가 조용히 바뀌고, Airflow 실행

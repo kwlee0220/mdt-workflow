@@ -1,14 +1,12 @@
 package mdt.workflow.airflow;
 
-import java.util.List;
 
-import utils.Preconditions;
-import utils.stream.FStream;
 
-import mdt.workflow.airflow.OperatorArgumentSpec.SinkArgument;
 import mdt.workflow.model.TaskDescriptor;
 
 /**
+ * 입력 값을 출력 요소에 그대로 기록하는 task({@code mdt.task.SetTask})의 Airflow spec. mdtpy
+ * {@code SetElementOperator(inputs, outputs)} 호출을 만든다. 고유 option은 없다.
  *
  * @author Kang-Woo Lee (ETRI)
  */
@@ -24,22 +22,7 @@ public final class SetElementSpec extends OperatorSpec {
 	}
 
 	public static SetElementSpec from(TaskDescriptor task) {
-		Preconditions.checkNotNullArgument(task, "task must not be null");
-		
-		List<OperatorArgumentSpec> inputs = FStream.from(task.getInputArguments())
-													.map(arg -> fromArgumentSpec(arg.getId(), arg))
-													.toList();
-		List<SinkArgument> outputs = FStream.from(task.getOutputArguments())
-													.map((arg) -> fromOutputVariable(arg.getId(), arg))
-													.toList();
-		
-		return builder()
-					.taskId(task.getId())
-					.inputs(inputs)
-					.outputs(outputs)
-					.dependencies(task.getDependencies())
-					.triggerRule(task.getTriggerRule())
-					.build();
+		return builder().fromTask(task).build();
 	}
 
 	public static Builder builder() {

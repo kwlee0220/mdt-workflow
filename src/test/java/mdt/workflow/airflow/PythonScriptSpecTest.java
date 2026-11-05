@@ -1,11 +1,14 @@
 package mdt.workflow.airflow;
 
+import java.io.IOException;
+import java.io.StringWriter;
 import java.util.List;
 import java.util.Set;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import mdt.workflow.WorkflowModel;
 import mdt.workflow.model.ArgumentSpec;
 import mdt.workflow.model.TaskDescriptor;
 import mdt.workflow.model.TaskDescriptors;
@@ -42,7 +45,7 @@ public class PythonScriptSpecTest {
 		Assertions.assertEquals(Set.of("get_heater_cycle_time"), spec.getDependencies());
 		Assertions.assertEquals(1, spec.getInputs().size());
 		Assertions.assertEquals("\"value\": mdtpy.airflow.task_output(\"get_heater_cycle_time\", \"target\")",
-								spec.getInputs().get(0).getPythonStatement());
+								spec.getInputs().get(0).toPythonDictEntry());
 		// 연결용 로직은 출력을 선언하지 않아도 전달되므로 출력 인자가 비어 있다.
 		Assertions.assertTrue(spec.getOutputs().isEmpty());
 	}
@@ -64,5 +67,27 @@ public class PythonScriptSpecTest {
 	@Test
 	public void blankScriptIsRejected() {
 		Assertions.assertThrows(IllegalArgumentException.class, () -> PythonScriptSpec.from(newTask("   \n ")));
+	}
+
+	/**
+	 * DAG 템플릿이 입력·출력 dict 항목을 {@code toPythonDictEntry()}로 렌더링한다(mdt-workflow 검토 N2).
+	 */
+	@Test
+	public void dagTemplateRendersInputAndOutputEntries() throws IOException {
+		TaskDescriptor first = new TaskDescriptor("get_heater_cycle_time", "get_heater_cycle_time",
+												TaskDescriptors.PYTHON_SCRIPT_TASK_TYPE);
+		first.addOption(PythonScriptSpec.OPTION_SCRIPT, "outputs['target'] = 1");
+		first.addInputArgument(ArgumentSpec.reference("src", "param:heater:CycleTime"));
+		first.addOutputArgument(ArgumentSpec.reference("target", "param:heater:Result"));
+		WorkflowModel model = new WorkflowModel();
+		model.setId("dict_entry_wf");
+		model.setTaskDescriptors(List.of(first, newTask("outputs['result'] = 1")));
+
+		StringWriter writer = new StringWriter();
+		AirflowDagGenerator.generate(model, writer);
+		String dag = writer.toString();
+		Assertions.assertTrue(dag.contains("\"src\": mdtpy.airflow.reference(\"param:heater:CycleTime\"),"), dag);
+		Assertions.assertTrue(dag.contains("\"target\": mdtpy.airflow.sink(\"param:heater:Result\"),"), dag);
+		Assertions.assertTrue(dag.contains("\"value\": mdtpy.airflow.task_output(\"get_heater_cycle_time\", \"target\"),"), dag);
 	}
 }

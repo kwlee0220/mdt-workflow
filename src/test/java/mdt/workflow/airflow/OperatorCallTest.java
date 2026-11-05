@@ -18,7 +18,7 @@ public class OperatorCallTest {
 	@Test
 	public void aasOperationRendersAllKwargs() {
 		OperatorSpec spec = AASOperationSpec.builder()
-											.taskId("t").instanceId("inst").submodelId("sm").path("Op")
+											.taskId("t").instanceId("inst").submodelIdShort("sm").path("Op")
 											.build();
 		Assertions.assertEquals(
 				"AASOperationOperator(\n"
@@ -31,7 +31,7 @@ public class OperatorCallTest {
 	@Test
 	public void operationSubmodelRendersInstanceAndSubmodel() {
 		OperatorSpec spec = OperationSubmodelSpec.builder()
-											.taskId("t").instanceId("inst").submodelId("sm")
+											.taskId("t").instanceId("inst").submodelIdShort("sm")
 											.build();
 		Assertions.assertEquals(
 				"OperationSubmodelOperator(\n"
@@ -99,8 +99,8 @@ public class OperatorCallTest {
 	@Test
 	public void everyCallStartsWithOperatorNameAndEndsWithNewline() {
 		OperatorSpec[] specs = {
-			AASOperationSpec.builder().taskId("t").instanceId("i").submodelId("s").path("p").build(),
-			OperationSubmodelSpec.builder().taskId("t").instanceId("i").submodelId("s").build(),
+			AASOperationSpec.builder().taskId("t").instanceId("i").submodelIdShort("s").path("p").build(),
+			OperationSubmodelSpec.builder().taskId("t").instanceId("i").submodelIdShort("s").build(),
 			SetElementSpec.builder().taskId("t").build(),
 			RESTfulAsyncRpcSpec.builder().taskId("t").baseUrl("u").endpoint("e").build(),
 			RESTfulRpcSpec.builder().taskId("t").opUrl("u").build(),
@@ -117,7 +117,7 @@ public class OperatorCallTest {
 	public void kwargValuesAreEscaped() {
 		// path에 큰따옴표가 들어가면 리터럴을 깨뜨리지 않도록 이스케이프되어야 한다.
 		OperatorSpec spec = AASOperationSpec.builder()
-											.taskId("t").instanceId("i").submodelId("s").path("a\"b")
+											.taskId("t").instanceId("i").submodelIdShort("s").path("a\"b")
 											.build();
 		Assertions.assertTrue(spec.getOperatorCall().contains("path = \"a\\\"b\","),
 							"path not escaped: " + spec.getOperatorCall());

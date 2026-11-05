@@ -9,48 +9,44 @@ import org.junit.jupiter.api.Test;
 import mdt.model.sm.value.ElementCollectionValue;
 import mdt.model.sm.value.ElementValue;
 import mdt.model.sm.value.PropertyValue;
-import mdt.workflow.airflow.OperatorArgumentSpec.LiteralArgument;
-import mdt.workflow.airflow.OperatorArgumentSpec.ReferenceArgument;
-import mdt.workflow.airflow.OperatorArgumentSpec.SinkArgument;
-import mdt.workflow.airflow.OperatorArgumentSpec.TaskOutputArgument;
 import mdt.workflow.model.ArgumentSpec;
 
 /**
- * {@link OperatorArgumentSpec}가 생성하는 Python 구문이 올바르게 이스케이프되는지 검증한다.
+ * {@link DagArgument}가 생성하는 Python 구문이 올바르게 이스케이프되는지 검증한다.
  * <p>
  * 이들 구문은 워크플로우 기술서에서 온 문자열(요소 참조 문자열, 태스크 식별자 등)을 Python 소스에
  * 직접 삽입하기 때문에, 이스케이프가 누락되면 임의의 Python 코드가 삽입될 수 있다.
  *
  * @author Kang-Woo Lee (ETRI)
  */
-public class OperatorArgumentSpecTest {
+public class DagArgumentTest {
 	/** dict 문맥을 유지한 채 항목을 하나 더 끼워 넣으려는 전형적인 삽입 페이로드. */
 	private static final String INJECTION =
 			"x\"), \"pwn\": __import__(\"os\").system(\"id\"), \"z\": mdtpy.airflow.reference(\"y";
 
 	@Test
 	public void referenceArgumentRendersPlainReference() {
-		String stmt = new ReferenceArgument("arg1", "param:heater:CycleTime").getPythonStatement();
+		String stmt = new DagArgument.Reference("arg1", "param:heater:CycleTime").toPythonDictEntry();
 		Assertions.assertEquals("\"arg1\": mdtpy.airflow.reference(\"param:heater:CycleTime\")", stmt);
 	}
 
 	@Test
 	public void sinkArgumentRendersPlainReference() {
-		String stmt = new SinkArgument("out1", "param:heater:Result").getPythonStatement();
+		String stmt = new DagSink("out1", "param:heater:Result").toPythonDictEntry();
 		Assertions.assertEquals("\"out1\": mdtpy.airflow.sink(\"param:heater:Result\")", stmt);
 	}
 
 	@Test
 	public void taskOutputArgumentRendersPlainNames() {
-		String stmt = new TaskOutputArgument("arg1", "task1", "out1").getPythonStatement();
+		String stmt = new DagArgument.TaskOutput("arg1", "task1", "out1").toPythonDictEntry();
 		Assertions.assertEquals("\"arg1\": mdtpy.airflow.task_output(\"task1\", \"out1\")", stmt);
 	}
 
 	@Test
 	public void literalArgumentDoesNotEscapeItsPythonExpression() {
 		// literal은 이미 Python 리터럴 표현식이므로 그대로 삽입되고, parse_json_node()로 복원된다.
-		String stmt = new LiteralArgument("arg1", "{'@type': 'mdt:value:integer', 'value': 1}")
-							.getPythonStatement();
+		String stmt = new DagArgument.Literal("arg1", "{'@type': 'mdt:value:integer', 'value': 1}")
+							.toPythonDictEntry();
 		Assertions.assertEquals("\"arg1\": mdtpy.airflow.literal(mdtpy.value.parse_json_node("
 								+ "{'@type': 'mdt:value:integer', 'value': 1}))", stmt);
 	}
@@ -60,7 +56,7 @@ public class OperatorArgumentSpecTest {
 		// 값 JSON만 넘기면 Long이 Python에서 Integer로 바뀌므로, @type이 보존되어야 한다.
 		ArgumentSpec spec = ArgumentSpec.LiteralArgument.builder()
 										.id("n").value(PropertyValue.LONG(12345678901L)).build();
-		String stmt = OperatorSpec.fromArgumentSpec("n", spec).getPythonStatement();
+		String stmt = OperatorSpec.fromArgumentSpec("n", spec).toPythonDictEntry();
 		Assertions.assertEquals("\"n\": mdtpy.airflow.literal(mdtpy.value.parse_json_node("
 								+ "{'@type': 'mdt:value:long', 'value': 12345678901}))", stmt);
 	}
@@ -73,7 +69,7 @@ public class OperatorArgumentSpecTest {
 		members.put("when", PropertyValue.DATE_TIME(Instant.parse("2026-10-07T05:00:00Z")));
 		ArgumentSpec spec = ArgumentSpec.LiteralArgument.builder()
 										.id("c").value(new ElementCollectionValue(members)).build();
-		String stmt = OperatorSpec.fromArgumentSpec("c", spec).getPythonStatement();
+		String stmt = OperatorSpec.fromArgumentSpec("c", spec).toPythonDictEntry();
 
 		Assertions.assertTrue(stmt.startsWith("\"c\": mdtpy.airflow.literal(mdtpy.value.parse_json_node("), stmt);
 		Assertions.assertTrue(stmt.contains("'@type': 'mdt:value:collection'"), stmt);
@@ -84,26 +80,26 @@ public class OperatorArgumentSpecTest {
 
 	@Test
 	public void injectionViaReferenceStringIsNeutralized() {
-		String stmt = new ReferenceArgument("arg1", INJECTION).getPythonStatement();
+		String stmt = new DagArgument.Reference("arg1", INJECTION).toPythonDictEntry();
 		Assertions.assertFalse(hasUnbalancedQuotes(stmt), "injection escaped the literal: " + stmt);
 		Assertions.assertFalse(stmt.contains("__import__(\""), "raw injection remains: " + stmt);
 	}
 
 	@Test
 	public void injectionViaSinkReferenceStringIsNeutralized() {
-		String stmt = new SinkArgument("out1", INJECTION).getPythonStatement();
+		String stmt = new DagSink("out1", INJECTION).toPythonDictEntry();
 		Assertions.assertFalse(hasUnbalancedQuotes(stmt), "injection escaped the literal: " + stmt);
 	}
 
 	@Test
 	public void injectionViaTaskIdIsNeutralized() {
-		String stmt = new TaskOutputArgument("arg1", INJECTION, "out1").getPythonStatement();
+		String stmt = new DagArgument.TaskOutput("arg1", INJECTION, "out1").toPythonDictEntry();
 		Assertions.assertFalse(hasUnbalancedQuotes(stmt), "injection escaped the literal: " + stmt);
 	}
 
 	@Test
 	public void injectionViaOutputArgumentNameIsNeutralized() {
-		String stmt = new TaskOutputArgument("arg1", "task1", INJECTION).getPythonStatement();
+		String stmt = new DagArgument.TaskOutput("arg1", "task1", INJECTION).toPythonDictEntry();
 		Assertions.assertFalse(hasUnbalancedQuotes(stmt), "injection escaped the literal: " + stmt);
 	}
 

@@ -13,6 +13,11 @@ import mdt.workflow.WorkflowModel;
 
 
 /**
+ * DAG 템플릿에 넘기는 DAG 하나의 정보(DAG id, 설명, task spec 목록).
+ * <p>
+ * 생성할 때 다음을 검증해, Airflow가 읽지 못하거나 의미가 틀린 DAG 파일이 만들어지지 않게 한다: DAG id가 Python
+ * 식별자이고 {@code "__"}를 포함하지 않을 것({@link AirflowWorkflowId}의 구분자), task가 하나 이상일 것, task id가
+ * 중복되지 않을 것, 의존 task가 모두 존재할 것.
  *
  * @author Kang-Woo Lee (ETRI)
  */
@@ -27,7 +32,7 @@ public final class DagSpec {
 		// dagId에 포함되면 문자열 표현의 라운드트립이 깨진다.
 		Preconditions.checkArgument(m_dagId != null && !m_dagId.isEmpty() && !m_dagId.contains("__"),
 				                    "invalid DAG id: %s (null, empty, or contains '__')", m_dagId);
-		Preconditions.checkArgument(PythonIdentifierUtil.isValidPythonIdentifier(m_dagId),
+		Preconditions.checkArgument(PythonIdentifiers.isValid(m_dagId),
 				                    "invalid DAG id: %s (invalid Python identifier)", m_dagId);
 		m_description = wfDesc.getDescription();
 		

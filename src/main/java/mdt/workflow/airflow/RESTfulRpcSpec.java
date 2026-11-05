@@ -1,16 +1,14 @@
 package mdt.workflow.airflow;
 
 import java.time.Duration;
-import java.util.List;
+import java.util.Set;
 
 import utils.Preconditions;
 import utils.UnitUtils;
 import utils.func.FOption;
-import utils.stream.FStream;
 
 import mdt.task.MDTTask;
 import mdt.task.RESTfulRpcTask;
-import mdt.workflow.airflow.OperatorArgumentSpec.SinkArgument;
 import mdt.workflow.model.TaskDescriptor;
 
 /**
@@ -47,6 +45,11 @@ public final class RESTfulRpcSpec extends OperatorSpec {
 	}
 
 	@Override
+	protected Set<String> getSupportedExecutionOptions() {
+		return Set.of(MDTTask.OPTION_TIMEOUT);
+	}
+
+	@Override
 	public String getOperatorCall() {
 		String call = "RestfulRpcOperator(\n"
 					+ kwargLine("op_url", m_opUrl);
@@ -64,33 +67,16 @@ public final class RESTfulRpcSpec extends OperatorSpec {
 	public static RESTfulRpcSpec from(TaskDescriptor task) {
 		Preconditions.checkNotNullArgument(task, "task must not be null");
 
-		var opUrlOpt = task.getOptions().get(RESTfulRpcTask.OPTION_URL);
-		if ( opUrlOpt == null ) {
-			throw new IllegalArgumentException("'" + RESTfulRpcTask.OPTION_URL + "' option is required"
-												+ " for RESTfulRpcSpec: " + task.getId());
-		}
-		String opUrl = opUrlOpt.getValue();
-
+		String opUrl = requireOption(task, RESTfulRpcTask.OPTION_URL, RESTfulRpcSpec.class);
 		// RESTfulRpcTask와 동일한 파서를 사용해서 "30s"/"60"/"1.5" 형식을 모두 받아들인다.
 		Duration timeout = FOption.ofNullable(task.getOptions().get(MDTTask.OPTION_TIMEOUT))
 									.map(opt -> UnitUtils.parseSecondDuration(opt.getValue()))
 									.getOrNull();
 
-		List<OperatorArgumentSpec> inputs = FStream.from(task.getInputArguments())
-													.map(arg -> fromArgumentSpec(arg.getId(), arg))
-													.toList();
-		List<SinkArgument> outputs = FStream.from(task.getOutputArguments())
-													.map((arg) -> fromOutputVariable(arg.getId(), arg))
-													.toList();
-
 		return builder()
-					.taskId(task.getId())
+					.fromTask(task)
 					.opUrl(opUrl)
 					.timeout(timeout)
-					.inputs(inputs)
-					.outputs(outputs)
-					.dependencies(task.getDependencies())
-					.triggerRule(task.getTriggerRule())
 					.build();
 	}
 

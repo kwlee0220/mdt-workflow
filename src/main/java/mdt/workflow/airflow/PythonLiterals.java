@@ -13,10 +13,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 
 /**
+ * JSON 텍스트를 같은 값의 Python 리터럴 식(dict·list·str·숫자·{@code True}/{@code False}/{@code None})으로 바꾼다.
+ * <p>
+ * 짧은 컨테이너(80자·원소 6개 이하)는 한 줄로, 긴 것은 들여쓴 여러 줄로 출력한다. 문자열 이스케이프는
+ * {@link PythonStringEscaper}를 쓰고, 유한하지 않은 실수는 {@code float('inf')}/{@code float('nan')}으로 출력한다.
+ * literal 인자의 polymorphic JSON을 DAG 코드에 넣을 때 쓴다({@link DagArgument.Literal}).
+ * <p>
+ * 2026-11-05 이전 이름은 {@code JsonToPythonLiteralHybrid.convertToPythonLiteralHybrid}였다(별칭 없음).
  *
  * @author Kang-Woo Lee (ETRI)
  */
-public class JsonToPythonLiteralHybrid {
+public final class PythonLiterals {
     // 들여쓰기 크기
     private static final int INDENT_SIZE = 2;
 
@@ -37,7 +44,18 @@ public class JsonToPythonLiteralHybrid {
         return new ObjectMapper(jf);
     }
 
-    public static String convertToPythonLiteralHybrid(String json) throws JsonMappingException, JsonProcessingException {
+    private PythonLiterals() {
+        throw new AssertionError("Should not be called: class=" + getClass().getName());
+    }
+
+    /**
+     * JSON 텍스트를 같은 값의 Python 리터럴 식으로 바꾼다.
+     *
+     * @param json	JSON 텍스트.
+     * @return	Python 리터럴 식.
+     * @throws JsonProcessingException	JSON 텍스트가 올바르지 않거나 중복 키가 있는 경우.
+     */
+    public static String fromJson(String json) throws JsonMappingException, JsonProcessingException {
         JsonNode root = MAPPER.readTree(json);
         StringBuilder sb = new StringBuilder();
         renderHybrid(root, sb, 0);
@@ -190,6 +208,11 @@ public class JsonToPythonLiteralHybrid {
             if (node.isBigDecimal()) {
                 BigDecimal bd = node.decimalValue();
                 sb.append(bd.toPlainString());
+            } else if ( node.isFloatingPointNumber() && !Double.isFinite(node.doubleValue()) ) {
+                // Infinity/NaN은 Python에서 정의되지 않은 이름이라 DAG import가 NameError로 실패한다.
+                // 2026-11-04 이전에는 그대로 출력했다.
+                double d = node.doubleValue();
+                sb.append(Double.isNaN(d) ? "float('nan')" : (d > 0 ? "float('inf')" : "float('-inf')"));
             } else {
                 sb.append(node.numberValue().toString());
             }
@@ -223,22 +246,5 @@ public class JsonToPythonLiteralHybrid {
      */
     private static String escapePythonSingleQuoted(String s) {
         return PythonStringEscaper.escape(s);
-    }
-
-    // -------------------------
-    // Demo
-    // -------------------------
-
-    public static void main(String[] args) throws Exception {
-        String json = """
-            {
-              "a": 1,
-              "b": "kkk",
-              "c": { "c1": 1.5, "c2": [1, 2], "c3": null, "c4": true },
-              "d": [ { "x": 1, "y": 2 }, { "x": 3, "y": 4, "z": "long long long long long" } ]
-            }
-            """;
-
-        System.out.println(convertToPythonLiteralHybrid(json));
     }
 }

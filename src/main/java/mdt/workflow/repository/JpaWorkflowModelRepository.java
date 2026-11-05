@@ -1,18 +1,15 @@
 package mdt.workflow.repository;
 
 import java.util.Optional;
-import java.util.Set;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 
 import mdt.workflow.domain.JpaWorkflowModel;
 
 import jakarta.transaction.Transactional;
 
 /**
+ * {@link mdt.workflow.domain.JpaWorkflowModel}의 Spring Data 리포지토리. 모델 id({@code modelId})로 조회·확인·삭제한다.
  *
  * @author Kang-Woo Lee (ETRI)
  */
@@ -23,22 +20,22 @@ public interface JpaWorkflowModelRepository extends JpaRepository<JpaWorkflowMod
 	 * @param modelId 워크플로우 모델의 ID
 	 * @return 워크플로우 모델
 	 */
-	@Query("SELECT w FROM JpaWorkflowModel w WHERE w.id = :modelId")
-	public Optional<JpaWorkflowModel> findByModelId(@Param("modelId") String modelId);
+	public Optional<JpaWorkflowModel> findByModelId(String modelId);
 	
 	/**
-	 * 워크플로우 모델의 ID 목록을 조회한다.
-	 * 
-	 * @return 워크플로우 모델의 ID 목록
+	 * 주어진 ID의 워크플로우 모델이 있는지 확인한다.
+	 *
+	 * @param modelId 워크플로우 모델의 ID
+	 * @return 있으면 {@code true}
 	 */
-	@Query("SELECT w.id FROM JpaWorkflowModel w")
-	public Set<String> findModelIdAll();
-	
-	@Query("SELECT CASE WHEN COUNT(w) > 0 THEN true ELSE false END FROM JpaWorkflowModel w WHERE w.id = :modelId")
-	public boolean existsByModelId(@Param("modelId") String modelId);
+	public boolean existsByModelId(String modelId);
 
-	@Modifying
+	/**
+	 * 워크플로우 모델을 ID로 삭제한다.
+	 *
+	 * @param modelId 워크플로우 모델의 ID
+	 * @return 삭제한 행 수(없으면 0)
+	 */
 	@Transactional
-	@Query("DELETE FROM JpaWorkflowModel w WHERE w.id = :modelId")
-	public void deleteByModelId(@Param("modelId") String modelId);
+	public long deleteByModelId(String modelId);
 }

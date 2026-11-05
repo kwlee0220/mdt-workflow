@@ -4,9 +4,7 @@ import java.util.List;
 import java.util.Set;
 
 import utils.Preconditions;
-import utils.stream.FStream;
 
-import mdt.workflow.airflow.OperatorArgumentSpec.SinkArgument;
 import mdt.workflow.model.TaskDescriptor;
 import mdt.workflow.model.TaskDescriptors;
 
@@ -62,8 +60,8 @@ public final class PythonScriptSpec extends OperatorSpec {
 	 * @param dependencies	선행 task 식별자 집합.
 	 * @return	생성된 spec.
 	 */
-	public static PythonScriptSpec of(String taskId, String script, List<OperatorArgumentSpec> inputs,
-										List<SinkArgument> outputs, Set<String> dependencies) {
+	public static PythonScriptSpec of(String taskId, String script, List<DagArgument> inputs,
+										List<DagSink> outputs, Set<String> dependencies) {
 		return builder()
 					.taskId(taskId)
 					.script(script)
@@ -85,25 +83,9 @@ public final class PythonScriptSpec extends OperatorSpec {
 	public static PythonScriptSpec from(TaskDescriptor task) {
 		Preconditions.checkNotNullArgument(task, "task must not be null");
 
-		var scriptOpt = task.getOptions().get(OPTION_SCRIPT);
-		if ( scriptOpt == null || scriptOpt.getValue() == null ) {
-			throw new IllegalArgumentException("'" + OPTION_SCRIPT + "' option is required for PythonScriptSpec: "
-												+ task.getId());
-		}
-
-		List<OperatorArgumentSpec> inputs = FStream.from(task.getInputArguments())
-													.map(arg -> fromArgumentSpec(arg.getId(), arg))
-													.toList();
-		List<SinkArgument> outputs = FStream.from(task.getOutputArguments())
-													.map(arg -> fromOutputVariable(arg.getId(), arg))
-													.toList();
 		return builder()
-					.taskId(task.getId())
-					.script(scriptOpt.getValue())
-					.inputs(inputs)
-					.outputs(outputs)
-					.dependencies(task.getDependencies())
-					.triggerRule(task.getTriggerRule())
+					.fromTask(task)
+					.script(requireOption(task, OPTION_SCRIPT, PythonScriptSpec.class))
 					.build();
 	}
 

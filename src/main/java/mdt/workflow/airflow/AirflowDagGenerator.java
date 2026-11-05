@@ -1,8 +1,6 @@
 package mdt.workflow.airflow;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -14,6 +12,11 @@ import io.pebbletemplates.pebble.template.PebbleTemplate;
 import mdt.workflow.WorkflowModel;
 
 /**
+ * 워크플로우 모델을 Airflow DAG Python 소스로 만드는 생성기.
+ * <p>
+ * 모델을 {@link DagSpec}으로 바꿔(여기서 DAG id·task id·의존 관계를 검증한다) Pebble 템플릿
+ * {@code templates/airflow_dag.peb}에 넣는다. 템플릿은 HTML 이스케이프를 끄고 존재하지 않는 속성을 오류로
+ * 처리한다({@code strictVariables}).
  *
  * @author Kang-Woo Lee (ETRI)
  */
@@ -50,17 +53,5 @@ public class AirflowDagGenerator {
         writer.flush();
 
         return dagSpec;
-	}
-	
-	public static final void main(String[] args) throws IOException {
-		File wfFile = new File("/home/kwlee/mdt/models/innercase/inspector/airflow/wf_test.json");
-//		File wfFile = new File("/home/kwlee/mdt/models/innercase/inspector/airflow/wf_innercase_optimization.json");
-		WorkflowModel wfDesc = WorkflowModel.parseJsonFile(wfFile);
-		
-        StringWriter writer = new StringWriter();
-        try ( writer ) {
-        	DagSpec dag = generate(wfDesc, writer);
-        }
-		System.out.println(writer.toString());
 	}
 }

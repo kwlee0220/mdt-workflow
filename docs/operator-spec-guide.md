@@ -82,7 +82,7 @@ Airflow worker: task 본문에서 mdtpy XxxOperator(..., inputs=..., outputs=...
 
 특히 `RESTfulRpcSpec`에서 출력을 전혀 선언하지 않으면 모델이 결과를 반환해도 후속 task에는 전달되지 않는다.
 Python `RestfulRpcOperator`를 직접 쓸 때는 저장 위치 `None`으로 "기록 없이 전달만"을 표현할 수 있지만, 워크플로
-JSON과 `SinkArgument`는 이 방식을 표현하지 못한다. 이 Spec에서는 필요한 출력에 유효한 저장 참조를 지정한다.
+JSON과 `DagSink`는 이 방식을 표현하지 못한다. 이 Spec에서는 필요한 출력에 유효한 저장 참조를 지정한다.
 
 ---
 
@@ -664,7 +664,7 @@ for ( TaskDescriptor task: model.getTaskDescriptors() ) {
 	OperatorSpec spec = OperatorSpec.from(task);		// type에 맞는 하위 Spec을 고른다
 	System.out.println(spec.getTaskId());
 	System.out.print(spec.getOperatorCall());			// "AASOperationOperator(\n      instance = ...\n"
-	spec.getInputs().forEach(arg -> System.out.println(arg.getPythonStatement()));
+	spec.getInputs().forEach(arg -> System.out.println(arg.toPythonDictEntry()));
 }
 ```
 
@@ -681,11 +681,11 @@ for ( TaskDescriptor task: model.getTaskDescriptors() ) {
 AASOperationSpec spec = AASOperationSpec.builder()
 							.taskId("add_and_sleep")
 							.instanceId("test")
-							.submodelId("AddAndSleep")
+							.submodelIdShort("AddAndSleep")
 							.path("Operation")
-							.addInput(new OperatorArgumentSpec.TaskOutputArgument("Data", "dec_by_5", "result"))
-							.addInput(new OperatorArgumentSpec.ReferenceArgument("SleepTime", "param:test:SleepTime"))
-							.addOutput(new OperatorArgumentSpec.SinkArgument("Output", "param:test:Data"))
+							.addInput(new DagArgument.TaskOutput("Data", "dec_by_5", "result"))
+							.addInput(new DagArgument.Reference("SleepTime", "param:test:SleepTime"))
+							.addOutput(new DagSink("Output", "param:test:Data"))
 							.addDependency("dec_by_5")
 							.build();
 ```
@@ -693,8 +693,8 @@ AASOperationSpec spec = AASOperationSpec.builder()
 | Spec | 고유 builder 메소드 | 필수 |
 |---|---|---|
 | `SetElementSpec` | 없음 | 없음 (실행에는 `source` 입력이 필요) |
-| `AASOperationSpec` | `instanceId`, `submodelId`, `path` | 셋 다 |
-| `OperationSubmodelSpec` | `instanceId`, `submodelId` | 둘 다 |
+| `AASOperationSpec` | `instanceId`, `submodelIdShort`, `path` | 셋 다 |
+| `OperationSubmodelSpec` | `instanceId`, `submodelIdShort` | 둘 다 |
 | `RESTfulAsyncRpcSpec` | `baseUrl`, `endpoint` | 둘 다 |
 | `RESTfulRpcSpec` | `modelUrl`, `timeout(Duration)` | `modelUrl` (`timeout`이 `null`이면 제한 없음) |
 | `PythonScriptSpec` | `script` | `script` (공백 불가) |
@@ -702,9 +702,9 @@ AASOperationSpec spec = AASOperationSpec.builder()
 - `PythonScriptSpec`은 builder 대신 `PythonScriptSpec.of(taskId, script, inputs, outputs, dependencies)`로도 만들 수 있다.
 - `AirflowDagGenerator.generate()`는 `WorkflowModel`만 받는다. builder로 만든 Spec 목록을 직접 넘겨 DAG를 만드는
   API는 없으므로, builder는 테스트나 Spec 단위 확인에 쓴다.
-- `OperatorArgumentSpec.LiteralArgument`의 두 번째 인자는 값 자체가 아니라 이미 Python 리터럴로 변환된 표현식이며,
+- `DagArgument.Literal`의 두 번째 인자는 값 자체가 아니라 이미 Python 리터럴로 변환된 표현식이며,
   이스케이프 없이 그대로 삽입된다. 워크플로 JSON의 literal 값을 쓸 때는 직접 만들지 말고 `OperatorSpec.from()`이
-  하는 변환(`ElementValue.toJsonString()` → `JsonToPythonLiteralHybrid`)을 거치게 한다.
+  하는 변환(`ElementValue.toJsonString()` → `PythonLiterals`)을 거치게 한다.
 
 ---
 
@@ -759,7 +759,7 @@ task 실행 단계에서 흔한 증상:
 ## 관련 구현과 문서
 
 - [OperatorSpec.java](../src/main/java/mdt/workflow/airflow/OperatorSpec.java) — type별 Spec 선택과 공통 인자 변환
-- [OperatorArgumentSpec.java](../src/main/java/mdt/workflow/airflow/OperatorArgumentSpec.java) — 입력과 출력의 Python 표현식
+- [DagArgument.java](../src/main/java/mdt/workflow/airflow/DagArgument.java), [DagSink.java](../src/main/java/mdt/workflow/airflow/DagSink.java) — 입력과 출력의 Python 표현식
 - [DagSpec.java](../src/main/java/mdt/workflow/airflow/DagSpec.java) — 워크플로 수준 검증
 - [airflow_dag.peb](../src/main/resources/templates/airflow_dag.peb) — 생성되는 Python 구조
 - [adding-operator.md](adding-operator.md) — 새 task 유형/operator 추가 절차, 배포 순서, 통합 검증 방법

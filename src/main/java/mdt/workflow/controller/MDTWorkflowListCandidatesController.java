@@ -2,7 +2,6 @@ package mdt.workflow.controller;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,6 +9,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -20,6 +20,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import lombok.RequiredArgsConstructor;
+
 import utils.stream.FStream;
 
 import mdt.workflow.WorkflowStatus;
@@ -27,14 +29,21 @@ import mdt.workflow.service.MDTWorkflowManager;
 
 
 /**
-*
-* @author Kang-Woo Lee (ETRI)
-*/
+ * 셸 자동완성 등에 쓰는 식별자 목록 API({@code /list}). 결과는 줄마다 식별자 하나인 {@code text/plain}이다.
+ * <ul>
+ *   <li>{@code GET /list/models}: 등록된 워크플로우 모델 id</li>
+ *   <li>{@code GET /list/workflows/{type}}: 워크플로우 인스턴스 id. {@code type}은 {@code all}/{@code running}/
+ *       {@code stopped}이며, 그 밖의 값은 400이다.</li>
+ * </ul>
+ *
+ * @author Kang-Woo Lee (ETRI)
+ */
 @Tag(name = "워크플로우 식별자 목록 조회 API")
 @RestController
 @RequestMapping(value={"/list"})
+@RequiredArgsConstructor
 public class MDTWorkflowListCandidatesController {
-	@Autowired private MDTWorkflowManager m_wfManager;
+	private final MDTWorkflowManager m_wfManager;
 
     @Operation(summary = "등록된 모든 워크플로우 모델의 식별자 목록을 반환한다.")
     @ApiResponses(value = {
@@ -84,6 +93,11 @@ public class MDTWorkflowListCandidatesController {
                                     return status == WorkflowStatus.COMPLETED || status == WorkflowStatus.FAILED;
 								})
 								.toList();
+    	}
+    	else {
+    		// 2026-11-04 이전에는 wfIdList가 null로 남아 NullPointerException(500)이 났다.
+    		throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+    											"unknown workflow type: " + type + " (all, running, stopped)");
     	}
 		String output = FStream.from(wfIdList)
 								.join(System.lineSeparator());

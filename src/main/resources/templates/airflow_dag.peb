@@ -30,12 +30,12 @@ def _dag():
     {{ task.operatorCall }}
       inputs = {
 {% for arg in task.inputs %}
-        {{ arg.pythonStatement }},
+        {{ arg.toPythonDictEntry() }},
 {% endfor %}
       }{% if task.outputs is not empty %},
       outputs = {
 {% for arg in task.outputs %}
-        {{ arg.pythonStatement }},
+        {{ arg.toPythonDictEntry() }},
 {% endfor %}
       }{% endif %}
 
