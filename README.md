@@ -6,6 +6,7 @@ REST API는 `/workflow-manager`(관리)와 `/list`(식별자 목록) 아래에 �
 
 ## 문서
 
+- [Docker 이미지 만들기](docker/README.md) — JAR 빌드부터 이미지 빌드, compose 실행, 레지스트리 업로드, DAG 폴더 조건, 문제 해결까지.
 - [OperatorSpec 설정과 실행 사용 설명서](docs/operator-spec-guide.md) — 지원 Spec 6종의 선택 기준,
   JSON 설정과 데이터 전달, Java DAG 생성 예제, 오류 확인 방법.
 - [새 Airflow Operator 추가 가이드](docs/adding-operator.md) — 새 task 유형을 워크플로 모델에서 Airflow DAG의

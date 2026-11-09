@@ -154,11 +154,14 @@ public class MDTWorkflowManager implements WorkflowManager {
 	}
 	
 	/**
-	 * 저장된 모델을 엔진용 산출물(Airflow DAG 코드)로 렌더링한다. 배포 상태와 상관없이 지금 저장된 모델로 만든다.
+	 * 저장된 모델을 엔진용 산출물(Airflow DAG 코드)로 렌더링한다. 호출할 때마다 새로 만들므로, 템플릿이 바뀌었다면
+	 * 배포된 DAG 파일과 다를 수 있다. 2026-11-07 이전 이름은 {@code getWorkflowScript}였다(별칭 없음).
+	 * <p>
+	 * 배포 상태와 상관없이 지금 저장된 모델로 만든다.
 	 *
 	 * @throws ResourceNotFoundException	식별자에 해당하는 모델이 없는 경우.
 	 */
-	public String getWorkflowScript(String wfModelId) throws ResourceNotFoundException {
+	public String renderWorkflowScript(String wfModelId) throws ResourceNotFoundException {
 		return m_engine.render(m_modelManager.getWorkflowModel(wfModelId));
 	}
 	
@@ -200,6 +203,15 @@ public class MDTWorkflowManager implements WorkflowManager {
 	@Override
 	public void removeWorkflowAll() {
 		m_engine.removeWorkflowAll();
+	}
+	
+	/**
+	 * 주어진 모델로 만든 워크플로우 인스턴스들을 모두 지운다. 모델이 배포되어 있지 않으면 아무 일도 하지 않는다.
+	 *
+	 * @param wfModelId	워크플로우 모델 id.
+	 */
+	public void removeWorkflowsOfModel(String wfModelId) {
+		m_engine.removeWorkflowsOfModel(wfModelId);
 	}
 	
 	@Override

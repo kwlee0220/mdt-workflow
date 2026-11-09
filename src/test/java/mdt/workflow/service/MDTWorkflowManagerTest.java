@@ -129,10 +129,10 @@ public class MDTWorkflowManagerTest {
 	 * 스크립트 조회는 저장된 모델을 읽어 엔진의 render에 넘긴다(검토 A3: 엔진은 모델 저장소를 모른다).
 	 */
 	@Test
-	public void getWorkflowScriptRendersStoredModel() {
+	public void renderWorkflowScriptRendersStoredModel() {
 		m_models.put("m1", model("m1", "v1"));
-		assertEquals("dag:v1", m_manager.getWorkflowScript("m1"));
-		assertThrows(ResourceNotFoundException.class, () -> m_manager.getWorkflowScript("none"));
+		assertEquals("dag:v1", m_manager.renderWorkflowScript("m1"));
+		assertThrows(ResourceNotFoundException.class, () -> m_manager.renderWorkflowScript("none"));
 	}
 
 	private static WorkflowModel model(String id, String description) {

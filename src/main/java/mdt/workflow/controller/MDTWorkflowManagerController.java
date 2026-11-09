@@ -173,8 +173,8 @@ public class MDTWorkflowManagerController {
     })
     @GetMapping("/models/{id}/script")
     @ResponseStatus(HttpStatus.OK)
-    public String getWorkflowScript(@PathVariable("id") String id) {
-		return m_wfManager.getWorkflowScript(id);
+    public String renderWorkflowScript(@PathVariable("id") String id) {
+		return m_wfManager.renderWorkflowScript(id);
     }
     
 
@@ -285,7 +285,7 @@ public class MDTWorkflowManagerController {
     @Tag(name = "워크플로우 인스턴스 관리 API")
     @Operation(summary = "모든 워크플로우 인스턴스를 삭제시킨다.")
     @Parameters({
-    	@Parameter(name = "modelFilter",
+    	@Parameter(name = "model",
     				description = "삭제 대상을 한정할 워크플로우 모델 식별자. "
     							+ "지정하면 해당 모델로 생성된 워크플로우 인스턴스만 삭제한다.")
     })
@@ -294,16 +294,10 @@ public class MDTWorkflowManagerController {
     })
 	@DeleteMapping("/workflows")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-	public void removeWorkflowAll(@RequestParam(name="modelFilter", required=false) String modelFilter) {
-    	if ( modelFilter != null ) {
-			m_wfManager.getWorkflowAll().stream()
-						.filter(wf -> wf.getModelId().equals(modelFilter))
-						.forEach(wf -> {
-							try {
-								m_wfManager.removeWorkflow(wf.getName());
-							}
-							catch ( ResourceNotFoundException e ) { }
-						});
+	public void removeWorkflowAll(@RequestParam(name="model", required=false) String modelId) {
+    	// 2026-11-07 이전 파라미터 이름은 'modelFilter'였다(별칭 없음, 검토 A5).
+    	if ( modelId != null ) {
+    		m_wfManager.removeWorkflowsOfModel(modelId);
     	}
     	else {
     		m_wfManager.removeWorkflowAll();

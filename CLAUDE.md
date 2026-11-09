@@ -8,6 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Composite build: `settings.gradle` includes `../../common/utils` (`:utils`) and `../mdt-client` (`:mdt-client`); versions come from `../mdt-client/gradle/libs.versions.toml`.
 
+Docker image: `docker/build_image.sh` / `push_image.sh` (procedure in [docker/README.md](docker/README.md)). `GET /health` (`controller.MDTWorkflowHealthController`) exists only for the image `HEALTHCHECK`.
+
 ```bash
 gradle test --rerun -x :utils:test -x :mdt-client:test   # this project's tests only
 gradle javadoc -x :utils:javadoc -x :mdt-client:javadoc
@@ -17,7 +19,7 @@ gradle bootJar
 ## Structure
 
 - `service.MDTWorkflowManager` — the `WorkflowManager` façade. Model add/replace = save (`JpaWorkflowModelManager`) then deploy (`WorkflowEngine.deploy`); a deploy failure rolls the save back (replace restores and re-deploys the previous model) and rethrows the original exception type. Model removal deletes the row (`ResourceNotFoundException` if absent) then cleans up the engine side (failures are WARN-logged, not rolled back). `removeWorkflowModelAll` removes models one by one through the same path.
-- `WorkflowEngine` — engine SPI: `deploy(model)` / `undeploy(modelId)` / `render(model)` plus the inherited `WorkflowInstanceManager` methods. The engine does not know the model store; `MDTWorkflowManager.getWorkflowScript(id)` loads the model and calls `render`.
+- `WorkflowEngine` — engine SPI: `deploy(model)` / `undeploy(modelId)` / `render(model)` plus the inherited `WorkflowInstanceManager` methods. The engine does not know the model store; `MDTWorkflowManager.renderWorkflowScript(id)` loads the model and calls `render`.
 - `service.AirflowWorkflowEngine` — the only engine adapter (`WorkflowEngine`, constructor takes only the Airflow configuration). Key behaviors:
   - **Client init** (`getRestfulClient()` → `connect()`): double-checked lock; logs in (`/auth/token`, credentials from config — required), builds the client, re-registers Airflow variable `mdt_manager_url`; the field is assigned only if every step succeeded. `afterPropertiesSet()` only logs an init failure (Airflow may come up later).
   - **Auth**: an OkHttp `Interceptor` adds the current JWT to every request; an `Authenticator` re-logs in once on 401 (`refreshJwtToken` is `synchronized` and only refreshes if the failed request used the current token). The token is never baked into headers.

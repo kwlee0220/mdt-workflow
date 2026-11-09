@@ -97,6 +97,28 @@ public class AirflowWorkflowEngineApiTest {
 		assertEquals(7, m_server.getRequestCount());		// 초기화 3 + 목록 2 + run 목록 1 + 삭제 1
 	}
 
+	@Test
+	public void removeWorkflowsOfModelListsOnlyThatDagAndKeepsGoingOnFailure() throws Exception {
+		m_server.enqueue(json(200, "{\"dag_runs\": [{\"dag_run_id\": \"r1\"}, {\"dag_run_id\": \"r2\"}], "
+									+ "\"total_entries\": 2}"));
+		m_server.enqueue(json(500, "{\"detail\": \"boom\"}"));
+		m_server.enqueue(new MockResponse().setResponseCode(204));
+
+		m_manager.removeWorkflowsOfModel("m1");
+
+		assertEquals("/api/v2/dags/m1/dagRuns", take().getRequestUrl().encodedPath());
+		assertEquals("/api/v2/dags/m1/dagRuns/r1", take().getPath());
+		assertEquals("/api/v2/dags/m1/dagRuns/r2", take().getPath());	// r1 실패 뒤에도 계속 지운다
+		assertEquals(6, m_server.getRequestCount());		// 초기화 3 + run 목록 1 + 삭제 2
+	}
+
+	@Test
+	public void removeWorkflowsOfUndeployedModelDoesNothing() throws Exception {
+		m_server.enqueue(json(404, "{\"detail\": \"DAG not found\"}"));
+		m_manager.removeWorkflowsOfModel("nope");
+		assertEquals(4, m_server.getRequestCount());
+	}
+
 	/**
 	 * Airflow의 404는 ResourceNotFoundException이다(D7).
 	 */

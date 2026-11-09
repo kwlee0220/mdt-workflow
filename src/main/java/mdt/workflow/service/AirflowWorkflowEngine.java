@@ -214,18 +214,36 @@ public class AirflowWorkflowEngine implements WorkflowEngine, InitializingBean {
 	public void removeWorkflowAll() {
 		// MDT가 만든 DAG의 실행만 지운다. 2026-11-04 이전에는 태그로 거르지 않아, 같은 Airflow의
 		// 다른 DAG 실행 기록까지 지웠다.
-		listMdtDagIds()
-						.flatMap(dagId -> listDagRunIds(dagId)
-													.map(runId -> new AirflowWorkflowId(dagId, runId)))
-						.forEach(wfId -> {
-							try {
-								removeWorkflow(wfId.toStringExpr());
-							}
-							catch ( Exception e ) {
-								s_logger.error("failed to remove the workflow: id={}, cause={}",
-												wfId, "" + e);
-							}
-						});
+		listMdtDagIds().forEach(this::removeDagRuns);
+	}
+	
+	@Override
+	public void removeWorkflowsOfModel(String wfModelId) {
+		// 그 모델의 DAG 실행만 조회한다. 2026-11-07 이전에는 컨트롤러가 모든 워크플로우의 상세(run마다
+		// task 목록 포함)를 받아 모델 id로 걸렀고, 삭제 실패를 흔적 없이 버렸다(검토 A5).
+		try {
+			removeDagRuns(wfModelId);
+		}
+		catch ( RESTfulException e ) {
+			if ( !(toNotFoundIf404(e, "Workflow model", wfModelId) instanceof ResourceNotFoundException) ) {
+				throw e;
+			}
+			// 배포되지 않은 모델(DAG 없음)은 지울 실행도 없다.
+			s_logger.debug("no deployed DAG to remove workflows: model={}", wfModelId);
+		}
+	}
+	
+	// 주어진 DAG의 실행을 모두 지운다. 하나를 지우지 못해도 나머지는 계속 지운다.
+	private void removeDagRuns(String dagId) {
+		for ( String runId: listDagRunIds(dagId).toList() ) {
+			AirflowWorkflowId wfId = new AirflowWorkflowId(dagId, runId);
+			try {
+				removeWorkflow(wfId.toStringExpr());
+			}
+			catch ( Exception e ) {
+				s_logger.error("failed to remove the workflow: id={}, cause={}", wfId, "" + e);
+			}
+		}
 	}
 	
 	private void enableDag(String dagId) {

@@ -46,4 +46,14 @@ public interface WorkflowEngine extends WorkflowInstanceManager {
 	 * @throws MDTWorkflowInstanceManagerException	렌더링 중 오류가 난 경우.
 	 */
 	public String render(WorkflowModel wfModel) throws MDTWorkflowInstanceManagerException;
+	
+	/**
+	 * 주어진 모델로 만든 워크플로우 인스턴스(실행)들을 모두 지운다. 모델이 배포되어 있지 않으면 아무 일도 하지 않는다.
+	 * <p>
+	 * 일부 인스턴스를 지우지 못해도 나머지는 계속 지우고, 실패는 로그로 남긴다.
+	 *
+	 * @param wfModelId	워크플로우 모델 id.
+	 * @throws MDTWorkflowInstanceManagerException	인스턴스 목록을 얻지 못한 경우.
+	 */
+	public void removeWorkflowsOfModel(String wfModelId) throws MDTWorkflowInstanceManagerException;
 }
