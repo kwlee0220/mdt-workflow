@@ -256,8 +256,20 @@ public class AirflowWorkflowEngine implements WorkflowEngine, InitializingBean {
 		}
 	}
 
+	/** 클라이언트가 정하는 실행 식별자의 형식. Airflow dag_run_id 로 그대로 쓴다. */
+	private static final java.util.regex.Pattern RUN_ID_PATTERN = java.util.regex.Pattern.compile("[A-Za-z0-9._-]{1,200}");
+
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * {@code runId}는 Airflow DagRun 의 {@code dag_run_id}가 되고, 워크플로우 식별자는
+	 * {@code <modelId>__<runId>}다. Airflow 가 같은 {@code dag_run_id}로 이미 있다고 거부하면(409),
+	 * 새로 시작하지 않고 그 DagRun 의 워크플로우를 돌려준다.
+	 */
 	@Override
-	public Workflow startWorkflow(@NotNull String modelId) throws ResourceNotFoundException {
+	public Workflow startWorkflow(@NotNull String modelId, @Nullable String runId) throws ResourceNotFoundException {
+		Preconditions.checkArgument(runId == null || RUN_ID_PATTERN.matcher(runId).matches(),
+									"invalid runId (expected [A-Za-z0-9._-]{1,200}): %s", runId);
 		String url = dagUrl(modelId) + "/dagRuns";
 
 		try {
@@ -269,12 +281,20 @@ public class AirflowWorkflowEngine implements WorkflowEngine, InitializingBean {
 		}
 		
 		try {
-			StartDagRunRequest startReq = StartDagRunRequest.now();
+			StartDagRunRequest startReq = StartDagRunRequest.now(runId);
 			String reqBodyStr = MDTModelSerDe.MAPPER.writeValueAsString(startReq);
 			RequestBody reqBody = RequestBody.create(reqBodyStr, HttpRESTfulClient.MEDIA_TYPE_JSON);
 			
 			JsonNode dags = getRestfulClient().post(url, reqBody, m_jsonNodeDeser);
 			return getWorkflowFromDagRun(modelId, dags);
+		}
+		catch ( RESTfulException e ) {
+			if ( runId != null && e.getHttpStatusCode() == 409 ) {
+				// 같은 runId 의 실행이 이미 있다(응답을 받지 못한 이전 시작 요청 등). 그 실행을 돌려준다.
+				s_logger.info("workflow run already exists; returning it: model={}, runId={}", modelId, runId);
+				return getWorkflow(new AirflowWorkflowId(modelId, runId).toStringExpr());
+			}
+			throw e;
 		}
 		catch ( JsonProcessingException e ) {
 			throw new RuntimeException("failed to serialize start workflow request", e);
@@ -558,10 +578,14 @@ public class AirflowWorkflowEngine implements WorkflowEngine, InitializingBean {
 	 */
 	private record StartDagRunRequest(@JsonProperty("dag_run_id") String dagRunId,
 									@JsonProperty("logical_date") String logicalDate) {
-		static StartDagRunRequest now() {
+		/** 지금 시각으로 시작하는 요청. {@code runId}가 없으면 시작 시각 + 무작위 접미어로 만든다. */
+		static StartDagRunRequest now(@Nullable String runId) {
 			Instant now = Instant.now();
-			String suffix = java.util.UUID.randomUUID().toString().substring(0, 8);
-			return new StartDagRunRequest(String.format("mdt__%s_%s", now, suffix), now.toString());
+			if ( runId == null ) {
+				String suffix = java.util.UUID.randomUUID().toString().substring(0, 8);
+				runId = String.format("mdt__%s_%s", now, suffix);
+			}
+			return new StartDagRunRequest(runId, now.toString());
 		}
 	}
 	

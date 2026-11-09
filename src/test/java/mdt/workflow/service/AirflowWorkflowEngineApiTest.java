@@ -255,6 +255,50 @@ public class AirflowWorkflowEngineApiTest {
 	}
 
 	/**
+	 * 실행 식별자를 주면 그대로 dag_run_id 가 되고, 워크플로우 식별자는 {@code <modelId>__<runId>}다.
+	 */
+	@Test
+	public void startWithRunIdUsesItAsDagRunId() throws Exception {
+		m_server.enqueue(json(200, "{\"is_paused\": false}"));
+		m_server.enqueue(json(200, "{\"dag_run_id\": \"insp-1\", \"state\": \"queued\"}"));
+		m_server.enqueue(json(200, "{\"task_instances\": []}"));
+		mdt.workflow.Workflow wf = m_manager.startWorkflow("wf1", "insp-1");
+		take();
+		RecordedRequest start = take();
+		com.fasterxml.jackson.databind.JsonNode body
+				= new com.fasterxml.jackson.databind.ObjectMapper().readTree(start.getBody().readUtf8());
+		assertEquals("insp-1", body.get("dag_run_id").asText());
+		assertEquals("wf1__insp-1", wf.getName());
+	}
+
+	/**
+	 * 같은 실행 식별자로 다시 시작하면(Airflow 409) 새로 시작하지 않고 이미 있는 실행을 돌려준다.
+	 */
+	@Test
+	public void startWithExistingRunIdReturnsTheExistingRun() throws Exception {
+		m_server.enqueue(json(200, "{\"is_paused\": false}"));
+		m_server.enqueue(json(409, "{\"detail\": \"DAGRun with dag_run_id: 'insp-1' already exists\"}"));
+		m_server.enqueue(json(200, "{\"dag_run_id\": \"insp-1\", \"state\": \"running\"}"));
+		m_server.enqueue(json(200, "{\"task_instances\": []}"));
+		mdt.workflow.Workflow wf = m_manager.startWorkflow("wf1", "insp-1");
+		take();
+		assertEquals("POST", take().getMethod());
+		assertEquals("/api/v2/dags/wf1/dagRuns/insp-1", take().getPath());
+		assertEquals("wf1__insp-1", wf.getName());
+		assertEquals(mdt.workflow.WorkflowStatus.RUNNING, wf.getStatus());
+	}
+
+	/**
+	 * 형식이 맞지 않는 실행 식별자는 Airflow 에 요청하지 않고 거부한다.
+	 */
+	@Test
+	public void startWithInvalidRunIdIsRejected() throws Exception {
+		org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+								() -> m_manager.startWorkflow("wf1", "bad id/../x"));
+		assertEquals(null, m_server.takeRequest(200, TimeUnit.MILLISECONDS));
+	}
+
+	/**
 	 * Airflow 상태 매핑(D12).
 	 */
 	@Test

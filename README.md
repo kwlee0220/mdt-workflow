@@ -21,6 +21,9 @@ REST API는 `/workflow-manager`(관리)와 `/list`(식별자 목록) 아래에 �
    저장을 되돌리고 400으로 응답한다. 모델 id는 Python 식별자여야 하고 `__`를 포함할 수 없다.
 2. **실행** (`POST /workflow-manager/models/{id}/start`): DAG를 활성화하고 DagRun을 만든다. 워크플로우 인스턴스 id는
    `<모델 id>__<DagRun id>`이다. 모델을 막 등록했다면 Airflow가 DAG 파일을 아직 읽지 않아 404가 날 수 있다.
+   `?runId=<실행 id>`(영문자·숫자·`.`·`_`·`-`, 1~200자, 형식이 틀리면 400)를 주면 그 값이 DagRun id가 된다. 같은 모델에
+   같은 `runId`의 실행이 이미 있으면 새로 만들지 않고 그 실행을 돌려준다. 그래서 응답을 받지 못한 시작 요청을 같은
+   `runId`로 다시 보내도 실행은 하나만 생긴다. `runId`가 없으면 서버가 시작 시각과 무작위 접미어로 만든다.
 3. **조회·중지·삭제** (`/workflow-manager/workflows/...`): Airflow REST API v2로 DagRun과 TaskInstance를 읽어
    워크플로우 상태로 바꾼다. 태그 `mdt`가 붙은 DAG(이 서버가 만든 DAG)만 다룬다.
    Airflow에 대응 기능이 없는 일시정지·재개 API는 없다(2026-11-05에 `PUT .../suspend`·`/resume`을 지웠다).

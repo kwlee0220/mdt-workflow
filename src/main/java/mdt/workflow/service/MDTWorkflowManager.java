@@ -3,6 +3,7 @@ package mdt.workflow.service;
 import java.util.List;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -186,8 +187,8 @@ public class MDTWorkflowManager implements WorkflowManager {
 	}
 	
 	@Override
-	public Workflow startWorkflow(@NotNull String wfModelId) throws ResourceNotFoundException {
-		return m_engine.startWorkflow(wfModelId);
+	public Workflow startWorkflow(@NotNull String wfModelId, @Nullable String runId) throws ResourceNotFoundException {
+		return m_engine.startWorkflow(wfModelId, runId);
 	}
 	
 	@Override

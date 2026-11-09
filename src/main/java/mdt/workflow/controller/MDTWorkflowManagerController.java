@@ -237,19 +237,25 @@ public class MDTWorkflowManagerController {
     @Operation(summary = "워크플로우 관리자에 등록된 워크플로우 모델을 이용하여 새로운 워크플로우를 시작시킨다.")
     @Parameters({
     	@Parameter(name = "wfModelId", description = "워크플로우 모델 식별자"),
+    	@Parameter(name = "runId", description = "실행 식별자(선택, [A-Za-z0-9._-]{1,200}). 주면 그 식별자로 실행을 만들고, "
+    											+ "같은 식별자의 실행이 이미 있으면 새로 시작하지 않고 그 실행을 돌려준다. "
+    											+ "응답을 받지 못한 시작 요청을 같은 값으로 다시 보내도 실행은 하나만 생긴다."),
     })
     @ApiResponses(value = {
-    	@ApiResponse(responseCode = "200", description = "성공",
+    	@ApiResponse(responseCode = "200", description = "성공(같은 runId 의 실행이 이미 있으면 그 실행)",
 			content = {
 				@Content(schema = @Schema(implementation = Workflow.class),
 						mediaType = "application/json")
 			}),
+    	@ApiResponse(responseCode = "400", description = "runId 형식이 맞지 않는 경우."),
     	@ApiResponse(responseCode = "404", description = "식별자에 해당하는 워크플로우 모델이 없는 경우.")
     })
 	@PostMapping("/models/{modelId}/start")
     @ResponseStatus(HttpStatus.OK)
-	public Workflow startWorkflow(@PathVariable("modelId") String wfModelId) throws ResourceNotFoundException {
-		return m_wfManager.startWorkflow(wfModelId);
+	public Workflow startWorkflow(@PathVariable("modelId") String wfModelId,
+									@RequestParam(name = "runId", required = false) String runId)
+		throws ResourceNotFoundException {
+		return m_wfManager.startWorkflow(wfModelId, runId);
 	}
 
     @Tag(name = "워크플로우 인스턴스 관리 API")
