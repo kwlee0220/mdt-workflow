@@ -6,7 +6,6 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import mdt.task.MDTTask;
 import mdt.task.RESTfulAsyncRpcTask;
 import mdt.task.RESTfulRpcTask;
 import mdt.workflow.model.TaskDescriptor;
@@ -35,14 +34,14 @@ public class AirflowSpecReviewTest {
 		TaskDescriptor async = new TaskDescriptor("a", "a", RESTfulAsyncRpcTask.class.getName());
 		async.addOption(RESTfulAsyncRpcTask.OPTION_BASE_URL, "http://h:8080");
 		async.addOption(RESTfulAsyncRpcTask.OPTION_OPERATION_ENDPOINT, "/op");
-		async.addOption(MDTTask.OPTION_TIMEOUT, "30s");
-		async.addOption(MDTTask.OPTION_POLL_INTERVAL, "1s");
-		assertEquals(List.of(MDTTask.OPTION_TIMEOUT, MDTTask.OPTION_POLL_INTERVAL),
+		async.addOption(TaskDescriptor.OPTION_TIMEOUT, "30s");
+		async.addOption(TaskDescriptor.OPTION_POLL_INTERVAL, "1s");
+		assertEquals(List.of(TaskDescriptor.OPTION_TIMEOUT, TaskDescriptor.OPTION_POLL_INTERVAL),
 					OperatorSpec.getIgnoredExecutionOptions(async, OperatorSpec.from(async)));
 
 		TaskDescriptor rpc = new TaskDescriptor("r", "r", RESTfulRpcTask.class.getName());
 		rpc.addOption(RESTfulRpcTask.OPTION_URL, "http://h:8080/op");
-		rpc.addOption(MDTTask.OPTION_TIMEOUT, "30s");
+		rpc.addOption(TaskDescriptor.OPTION_TIMEOUT, "30s");
 		assertEquals(List.of(), OperatorSpec.getIgnoredExecutionOptions(rpc, OperatorSpec.from(rpc)));
 	}
 

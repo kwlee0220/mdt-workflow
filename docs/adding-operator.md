@@ -198,7 +198,7 @@ editable 설치해 쓴다. 따라서 소스를 고치면 PyPI 배포 없이 다�
 - `implements MDTTask, LoggerSettable`. 생성자 `XxxTask(TaskDescriptor)`, `getTaskDescriptor()`,
   `run(MDTInstanceManager)`(반환 타입 `Map<String,SubmodelElement>`)를 구현한다.
 - option 이름은 클래스에 상수로 둔다(예: `RESTfulRpcTask.OPTION_URL = "opUrl"`). 공통 option은
-  `MDTTask.OPTION_TIMEOUT`(`"timeout"`), `OPTION_POLL_INTERVAL`(`"poll"`), `OPTION_LOG_LEVEL`(`"loglevel"`)을 쓴다.
+  `TaskDescriptor.OPTION_TIMEOUT`(`"timeout"`), `OPTION_POLL_INTERVAL`(`"poll"`), `OPTION_LOG_LEVEL`(`"loglevel"`)을 쓴다.
 - 참고 구현: `RESTfulRpcTask`(option, 입력 읽기, 출력 기록), `SetTask`.
 
 **B. type 문자열 상수** (`TaskDescriptors.java`의 실제 코드)

@@ -31,7 +31,7 @@ public class JpaWorkflowModelManager implements WorkflowModelManager {
 	public WorkflowModel getWorkflowModel(String id) {
 		return m_repo.findByModelId(id)
 						.map(JpaWorkflowModel::asWorkflowModel)
-						.orElseThrow(() -> new ResourceNotFoundException("Workflow model not found: id=" + id));
+						.orElseThrow(() -> new ResourceNotFoundException("WorkflowModel", "id=" + id));
 	}
 	
 	@Override
@@ -49,7 +49,7 @@ public class JpaWorkflowModelManager implements WorkflowModelManager {
 			return saved.asWorkflowModel();
 		}
 		catch ( DataIntegrityViolationException e ) {
-			throw new ResourceAlreadyExistsException("WorkflowModel", wfModel.getId());	
+			throw new ResourceAlreadyExistsException("WorkflowModel", "id=" + wfModel.getId());	
 		}
 	}
 
@@ -78,12 +78,12 @@ public class JpaWorkflowModelManager implements WorkflowModelManager {
 	 * 워크플로우 모델을 삭제한다.
 	 *
 	 * @param id	삭제할 모델의 식별자.
-	 * @throws ResourceNotFoundException	해당 모델이 없는 경우(2026-11-04 이전에는 아무 일 없이 성공했다).
+	 * @throws ResourceNotFoundException	해당 모델이 없는 경우.
 	 */
 	@Override
 	public void removeWorkflowModel(String id) {
 		if ( m_repo.deleteByModelId(id) == 0 ) {
-			throw new ResourceNotFoundException("WorkflowModel", id);
+			throw new ResourceNotFoundException("WorkflowModel", "id=" + id);
 		}
 	}
 

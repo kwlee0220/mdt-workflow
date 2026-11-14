@@ -7,7 +7,6 @@ import utils.Preconditions;
 import utils.UnitUtils;
 import utils.func.FOption;
 
-import mdt.task.MDTTask;
 import mdt.task.RESTfulRpcTask;
 import mdt.workflow.model.TaskDescriptor;
 
@@ -46,7 +45,7 @@ public final class RESTfulRpcSpec extends OperatorSpec {
 
 	@Override
 	protected Set<String> getSupportedExecutionOptions() {
-		return Set.of(MDTTask.OPTION_TIMEOUT);
+		return Set.of(TaskDescriptor.OPTION_TIMEOUT);
 	}
 
 	@Override
@@ -69,7 +68,7 @@ public final class RESTfulRpcSpec extends OperatorSpec {
 
 		String opUrl = requireOption(task, RESTfulRpcTask.OPTION_URL, RESTfulRpcSpec.class);
 		// RESTfulRpcTask와 동일한 파서를 사용해서 "30s"/"60"/"1.5" 형식을 모두 받아들인다.
-		Duration timeout = FOption.ofNullable(task.getOptions().get(MDTTask.OPTION_TIMEOUT))
+		Duration timeout = FOption.ofNullable(task.getOptions().get(TaskDescriptor.OPTION_TIMEOUT))
 									.map(opt -> UnitUtils.parseSecondDuration(opt.getValue()))
 									.getOrNull();
 

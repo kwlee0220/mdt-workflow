@@ -90,7 +90,7 @@ public class SampleAirflowDagGenerator {
 		
 		String wfJsonStr = MDTModelSerDe.toJsonString(wfDesc);
 		File wfFile = FileUtils.path(FileUtils.getUserHomeDir(), "tmp", "wf_test.json");
-		IOUtils.toFile(wfJsonStr, wfFile);
+		IOUtils.writeString(wfFile, wfJsonStr);
 
         StringWriter writer = new StringWriter();
         try ( writer ) {

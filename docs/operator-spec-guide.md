@@ -732,6 +732,7 @@ DAG 생성 단계의 오류 메시지:
 | `invalid DAG id: ...` | 워크플로 id가 비었거나, Python 식별자가 아니거나, `__`를 포함 | `__`는 DAG id와 run id의 구분자라 쓸 수 없다 |
 | `DAG has no task` | task가 하나도 없음 | task를 추가한다 |
 | `duplicate task id` / `unknown dependency task id` | task id 중복, 또는 `dependencies`가 없는 task를 가리킴 | id와 의존 관계의 오탈자를 확인한다 |
+| `unknown task-output source task` / `task-output source task is not upstream` | task-output 입력의 `taskId`가 없는 task이거나, 직접·간접 선행 task가 아님 | `taskId` 오탈자를 고치거나 그 task를 `dependencies`에 넣는다 |
 
 task 실행 단계에서 흔한 증상:
 

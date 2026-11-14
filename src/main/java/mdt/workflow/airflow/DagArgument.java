@@ -123,6 +123,15 @@ public abstract sealed class DagArgument
 			m_outputArgumentId = outputArgumentId;
 		}
 
+		/**
+		 * 출력을 가져올 앞 task의 식별자를 반환한다.
+		 *
+		 * @return	task 식별자.
+		 */
+		public String getTaskId() {
+			return m_taskId;
+		}
+
 		@Override
 		public String toPythonDictEntry() {
 			return String.format("%s: mdtpy.airflow.task_output(%s, %s)",

@@ -18,7 +18,6 @@ import utils.Preconditions;
 import utils.stream.FStream;
 
 import mdt.task.AASOperationTask;
-import mdt.task.MDTTask;
 import mdt.task.OperationSubmodelTask;
 import mdt.task.RESTfulAsyncRpcTask;
 import mdt.task.RESTfulRpcTask;
@@ -40,7 +39,7 @@ import mdt.workflow.model.TriggerRule;
 public abstract class OperatorSpec {
 	private static final Logger s_logger = LoggerFactory.getLogger(OperatorSpec.class);
 	/** Java 태스크가 쓰지만 Airflow operator에는 아직 전달하지 못할 수 있는 실행 옵션. */
-	private static final List<String> EXECUTION_OPTIONS = List.of(MDTTask.OPTION_TIMEOUT, MDTTask.OPTION_POLL_INTERVAL);
+	private static final List<String> EXECUTION_OPTIONS = List.of(TaskDescriptor.OPTION_TIMEOUT, TaskDescriptor.OPTION_POLL_INTERVAL);
 	
 	private final String m_taskId;
 	private final List<DagArgument> m_inputs;
@@ -145,7 +144,7 @@ public abstract class OperatorSpec {
 	}
 
 	/**
-	 * 이 spec이 Airflow operator에 전달하는 실행 옵션({@link MDTTask#OPTION_TIMEOUT}, {@link MDTTask#OPTION_POLL_INTERVAL})
+	 * 이 spec이 Airflow operator에 전달하는 실행 옵션({@link TaskDescriptor#OPTION_TIMEOUT}, {@link TaskDescriptor#OPTION_POLL_INTERVAL})
 	 * 이름을 반환한다. 기본은 없음이다.
 	 *
 	 * @return	전달하는 실행 옵션 이름.

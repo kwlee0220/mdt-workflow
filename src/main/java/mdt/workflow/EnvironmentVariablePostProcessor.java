@@ -2,7 +2,6 @@ package mdt.workflow;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -55,7 +54,7 @@ public class EnvironmentVariablePostProcessor implements EnvironmentPostProcesso
                 s_deferredLog.info("trying to load environment variables from file: "
                                     + envFile.getAbsolutePath());
                 EnvironmentFileLoader envLoader = EnvironmentFileLoader.from(envFile);
-                LinkedHashMap<String, String> variables = envLoader.load();
+                Map<String,String> variables = envLoader.load();
                 KeyValueFStream.from(variables)
                                 .forEach(kv -> s_deferredLog.info(String.format("  - EnvVar: %s=%s", kv.key(),
                                                                                 maskValue(kv.key(), kv.value()))));

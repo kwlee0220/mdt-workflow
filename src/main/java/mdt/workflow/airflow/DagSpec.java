@@ -1,7 +1,10 @@
 package mdt.workflow.airflow;
 
+import java.util.ArrayDeque;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
@@ -17,7 +20,8 @@ import mdt.workflow.WorkflowModel;
  * <p>
  * 생성할 때 다음을 검증해, Airflow가 읽지 못하거나 의미가 틀린 DAG 파일이 만들어지지 않게 한다: DAG id가 Python
  * 식별자이고 {@code "__"}를 포함하지 않을 것({@link AirflowWorkflowId}의 구분자), task가 하나 이상일 것, task id가
- * 중복되지 않을 것, 의존 task가 모두 존재할 것.
+ * 중복되지 않을 것, 의존 task가 모두 존재할 것, task-output 입력이 가리키는 task가 존재하고 직접 또는 간접 선행
+ * task일 것.
  *
  * @author Kang-Woo Lee (ETRI)
  */
@@ -59,6 +63,43 @@ public final class DagSpec {
 											dep, task.getTaskId());
 			}
 		}
+
+		// task-output 입력은 출력을 내는 task가 먼저 끝나 있어야 값을 읽을 수 있으므로, 그 task가 존재하고
+		// 선행 task(직접 또는 간접)일 것을 요구한다. 출력 인자 이름은 연산 실행 결과로 정해지므로 검사하지 않는다.
+		Map<String,OperatorSpec> taskMap = FStream.from(m_tasks).tagKey(OperatorSpec::getTaskId).toMap();
+		for ( OperatorSpec task: m_tasks ) {
+			Set<String> ancestors = null;
+			for ( DagArgument input: task.getInputs() ) {
+				if ( input instanceof DagArgument.TaskOutput taskOut ) {
+					String srcId = taskOut.getTaskId();
+					Preconditions.checkArgument(taskIds.contains(srcId),
+												"unknown task-output source task: %s (input '%s' of task: %s)",
+												srcId, input.getId(), task.getTaskId());
+					if ( ancestors == null ) {
+						ancestors = collectAncestors(task, taskMap);
+					}
+					Preconditions.checkArgument(ancestors.contains(srcId),
+												"task-output source task is not upstream: %s (input '%s' of task: %s); "
+												+ "add it to the dependencies", srcId, input.getId(), task.getTaskId());
+				}
+			}
+		}
+	}
+
+	// task의 직접·간접 선행 task 식별자들. 의존 관계에 순환이 있어도 끝나도록 방문한 task는 다시 보지 않는다.
+	private static Set<String> collectAncestors(OperatorSpec task, Map<String,OperatorSpec> taskMap) {
+		Set<String> ancestors = Sets.newHashSet();
+		Deque<String> remains = new ArrayDeque<>(task.getDependencies());
+		while ( !remains.isEmpty() ) {
+			String id = remains.pop();
+			if ( ancestors.add(id) ) {
+				OperatorSpec dep = taskMap.get(id);
+				if ( dep != null ) {
+					remains.addAll(dep.getDependencies());
+				}
+			}
+		}
+		return ancestors;
 	}
 
 	public String getId() {
