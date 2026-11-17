@@ -29,7 +29,6 @@ for arg in "$@"; do
 done
 
 # 옵션 값이 있는지 확인한다. 값 자리에 다른 옵션(예: '--tag --uid')이 오면 거부한다.
-# 2026-11-07 이전에는 다음 인자를 그대로 값으로 받았다(검토 I1).
 require_value() {
     local opt="$1" value="$2" example="$3"
     if [ -z "$value" ] || [[ "$value" == -* ]]; then
@@ -105,9 +104,9 @@ if [ -z "$MDT_VERSION" ]; then
     echo "오류: --tag 또는 \$MDT_BUILD_VERSION 둘 중 하나는 지정해야 합니다." >&2
     exit 1
 fi
-# 이미지 이름은 push_image.sh와 같은 환경 변수로 정한다(검토 N2).
+# 이미지 이름은 push_image.sh와 같은 환경 변수로 정한다.
 IMAGE_NAME="${MDT_IMAGE_NAME:-mdt-workflow}"
-# 이미지 이름:태그. 2026-11-07 이전 변수 이름은 REPOSITORY였다(검토 N1).
+# 이미지 이름:태그.
 IMAGE="$IMAGE_NAME:$MDT_VERSION"
 
 # MDT_HOME 환경변수 가드
@@ -132,9 +131,8 @@ jar_version() {
     echo "$version"
 }
 
-# 이미지에 넣을 JAR이 있고 태그와 같은 버전인지 확인한다. 2026-11-07 이전에는 확인하지 않아
-# 다른 버전의 JAR이 든 이미지가 이 태그로 만들어질 수 있었다(검토 D4). JAR이 없을 때 안내하던
-# './gradle_assemble_all.sh'는 docker/가 아니라 MDT 소스 루트에 있었다(검토 I2).
+# 이미지에 넣을 JAR이 있고 태그와 같은 버전인지 확인한다. 다른 버전의 JAR이 든 이미지가
+# 이 태그로 만들어지지 않게 한다.
 if [ ! -f "$WORKFLOW_JAR" ]; then
     echo "오류: JAR이 없습니다: $WORKFLOW_JAR" >&2
     echo "      gradle로 빌드한 build/libs/mdt-workflow-<버전>-all.jar를 이 경로에 복사하거나 심볼릭 링크로 연결하세요." >&2
@@ -148,8 +146,7 @@ elif [ "$JAR_VERSION" != "$MDT_VERSION" ]; then
     exit 1
 fi
 
-# 빌드 컨텍스트는 임시 디렉터리로 만든다. docker/ 폴더에 사용자가 둔 파일을 덮어쓰거나 지우지 않는다
-# (2026-11-07 이전에는 docker/에 JAR을 복사했다가 trap으로 지워, 미리 둔 JAR도 사라졌다, 검토 D5).
+# 빌드 컨텍스트는 임시 디렉터리로 만든다. docker/ 폴더에 사용자가 둔 파일을 덮어쓰거나 지우지 않는다.
 BUILD_CONTEXT=$(mktemp -d)
 trap 'rm -rf "$BUILD_CONTEXT"' EXIT
 cp Dockerfile "$BUILD_CONTEXT/"

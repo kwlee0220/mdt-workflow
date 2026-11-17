@@ -1,4 +1,4 @@
-# 기반 이미지를 digest로 고정해, 같은 소스로 빌드하면 같은 JRE·OS 패키지가 들어가게 한다(검토 I4).
+# 기반 이미지를 digest로 고정해, 같은 소스로 빌드하면 같은 JRE·OS 패키지가 들어가게 한다.
 # mdt-manager 이미지와 같은 digest를 쓴다. 대신 보안 갱신을 자동으로 받지 않으므로 주기적으로 갱신한다:
 #   docker buildx imagetools inspect eclipse-temurin:21-jre-jammy   # 'Digest:' 값으로 아래를 바꾼다
 FROM eclipse-temurin:21-jre-jammy@sha256:1eac8b8fee11ca7d6725a48bc5d41992ed1561504ebae25490d2d062847e8269
@@ -45,7 +45,7 @@ COPY --chown=mdt:mdt ./mdt-workflow-all.jar /mdt/mdt-workflow/
 WORKDIR /mdt/mdt-workflow
 USER mdt
 
-# REST 포트. application.properties의 server.port를 바꾸면 MDT_WORKFLOW_PORT도 같이 바꾼다(검토 I5).
+# REST 포트. application.properties의 server.port를 바꾸면 MDT_WORKFLOW_PORT도 같이 바꾼다.
 ENV MDT_WORKFLOW_PORT=12989
 EXPOSE 12989
 
@@ -53,7 +53,7 @@ EXPOSE 12989
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
     CMD curl -fsS "http://localhost:${MDT_WORKFLOW_PORT}/health" > /dev/null || exit 1
 
-# JVM 옵션. 'docker run -e JAVA_OPTS=...'이나 compose의 environment로 바꾼다(검토 I6).
+# JVM 옵션. 'docker run -e JAVA_OPTS=...'이나 compose의 environment로 바꾼다.
 # sh가 exec로 java를 실행하므로 java가 PID 1이 되어 종료 신호를 직접 받는다.
 # (이 서비스는 자식 프로세스를 띄우지 않아 tini가 필요 없다)
 ENV JAVA_OPTS="-XX:MaxRAMPercentage=75.0"

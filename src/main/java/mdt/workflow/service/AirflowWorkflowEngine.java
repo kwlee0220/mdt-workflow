@@ -100,7 +100,7 @@ public class AirflowWorkflowEngine implements WorkflowEngine, InitializingBean {
 		Preconditions.checkArgument(m_conf.getDagsFolder().isDirectory(),
 									"dags-folder is not a directory: "
 											+ m_conf.getDagsFolder().getAbsolutePath());
-		// Airflow 계정은 필수다(2026-11-04 이전에는 airflow/airflow로 고정되어 있었다).
+		// Airflow 계정은 필수다.
 		Preconditions.checkArgument(m_conf.getUsername() != null && !m_conf.getUsername().isBlank(),
 									"Airflow username is not configured: mdt.workflow-manager.airflow.username");
 		Preconditions.checkArgument(m_conf.getPassword() != null,
@@ -162,8 +162,8 @@ public class AirflowWorkflowEngine implements WorkflowEngine, InitializingBean {
 	/**
 	 * 페이지 단위로 결과를 주는 Airflow 목록 API를 끝까지 읽는다.
 	 * <p>
-	 * {@code limit}/{@code offset}을 붙여 {@code total_entries}에 이를 때까지(또는 빈 페이지가 올 때까지) 읽는다.
-	 * 2026-11-04 이전에는 첫 페이지만 읽어서, 항목이 서버의 기본 limit을 넘으면 일부만 처리했다.
+	 * {@code limit}/{@code offset}을 붙여 {@code total_entries}에 이를 때까지(또는 빈 페이지가 올 때까지) 읽으므로,
+	 * 서버의 기본 limit을 넘는 항목도 모두 읽는다.
 	 *
 	 * @param url	목록 API URL. 질의 파라미터가 있어도 된다.
 	 * @param field	응답에서 항목 배열을 담은 필드 이름(예: {@code "dags"}, {@code "dag_runs"}).
@@ -212,15 +212,13 @@ public class AirflowWorkflowEngine implements WorkflowEngine, InitializingBean {
 
 	@Override
 	public void removeWorkflowAll() {
-		// MDT가 만든 DAG의 실행만 지운다. 2026-11-04 이전에는 태그로 거르지 않아, 같은 Airflow의
-		// 다른 DAG 실행 기록까지 지웠다.
+		// MDT가 만든 DAG(태그 'mdt')의 실행만 지운다. 같은 Airflow의 다른 DAG 실행 기록은 건드리지 않는다.
 		listMdtDagIds().forEach(this::removeDagRuns);
 	}
 	
 	@Override
 	public void removeWorkflowsOfModel(String wfModelId) {
-		// 그 모델의 DAG 실행만 조회한다. 2026-11-07 이전에는 컨트롤러가 모든 워크플로우의 상세(run마다
-		// task 목록 포함)를 받아 모델 id로 걸렀고, 삭제 실패를 흔적 없이 버렸다(검토 A5).
+		// 모든 워크플로우를 읽어 거르지 않고, 그 모델의 DAG 실행만 조회해 지운다.
 		try {
 			removeDagRuns(wfModelId);
 		}
@@ -304,11 +302,10 @@ public class AirflowWorkflowEngine implements WorkflowEngine, InitializingBean {
 	@Override
 	public void stopWorkflow(String wfIdStr) throws ResourceNotFoundException {
 		AirflowWorkflowId wfId = AirflowWorkflowId.parse(wfIdStr);
-		// 실행 중이거나 대기 중인 DagRun의 상태를 'failed'로 바꿔 중지시킨다. 2026-11-04 이전에는 'running'만
-		// 중지했다(대기 중인 run은 그대로 두었다).
+		// 실행 중이거나 대기 중인 DagRun의 상태를 'failed'로 바꿔 중지시킨다.
 		if ( updateDagRunState(wfId, "failed", Set.of("running", "queued")) ) {
 			// 아직 실행 중인 task도 실패로 바꾼다. Airflow API v2의 본문 필드는 'new_state'다(정의되지 않은 필드는
-			// 거부한다). 2026-11-04 이전에는 'state'를 보내 이 요청이 거부되었다.
+			// 거부하므로 'state'를 보내면 이 요청이 실패한다).
 			String body = "{\"new_state\": \"failed\"}";
 			listTaskInstances(wfId.toUrl(m_airflowUrl), "running")
 				.forEach(taskInstNode -> {
@@ -330,11 +327,11 @@ public class AirflowWorkflowEngine implements WorkflowEngine, InitializingBean {
 	/**
 	 * 워크플로우 인스턴스(DagRun)에서 한 task의 최신 시도 로그를 텍스트로 반환한다.
 	 * <p>
-	 * Airflow 로그는 task 시도 단위라, 인터페이스의 {@code podName}을 <b>task id</b>로 해석한다(이전 엔진의
-	 * pod 이름 자리를 그대로 쓴다). 시도 번호는 TaskInstance의 {@code try_number}(최신 시도)를 쓰고,
+	 * Airflow 로그는 task 시도 단위라, 인터페이스의 {@code podName}을 <b>task id</b>로 해석한다.
+	 * 시도 번호는 TaskInstance의 {@code try_number}(최신 시도)를 쓰고,
 	 * {@code GET .../taskInstances/{task}/logs/{try}?full_content=true}의 구조화 로그를 한 항목당 한 줄
 	 * ({@code <timestamp> <LEVEL> <logger>: <event> <나머지 필드 JSON>})로 바꾼다. 실행 중인 task는 그 시점까지의
-	 * 로그만 돌려준다. 2026-11-05 이전에는 항상 {@code UnsupportedOperationException}(501)이었다.
+	 * 로그만 돌려준다.
 	 *
 	 * @param wfIdStr	워크플로우 인스턴스 id({@code <dagId>__<dagRunId>}).
 	 * @param taskId	로그를 조회할 task id.
@@ -423,7 +420,7 @@ public class AirflowWorkflowEngine implements WorkflowEngine, InitializingBean {
 			File dagFile = dagFile(dag.getId());
 			s_logger.debug("trying to create airflow dag file: {}", dagFile);
 			// Airflow DAG processor가 쓰는 중인 파일을 읽지 않도록 임시 파일에 쓴 뒤 한 번에 바꾼다.
-			// 임시 파일 이름은 '.py'로 끝나지 않아 Airflow가 읽지 않는다. 2026-11-04 이전에는 제자리에 바로 썼다.
+			// 임시 파일 이름은 '.py'로 끝나지 않아 Airflow가 읽지 않는다.
 			Path tmp = new File(m_conf.getDagsFolder(), "." + dag.getId() + ".py.tmp").toPath();
 			Files.writeString(tmp, writer.toString(), StandardCharsets.UTF_8);
 			try {
@@ -446,8 +443,8 @@ public class AirflowWorkflowEngine implements WorkflowEngine, InitializingBean {
 	 */
 	@Override
 	public void undeploy(String wfModelId) throws MDTWorkflowInstanceManagerException {
-		// 파일을 먼저 지운다. 2026-11-04 이전에는 Airflow API로 DAG를 먼저 지워서, 파일을 지우기 전에
-		// DAG processor가 파일을 다시 읽으면 DAG가 다시 등록되었다.
+		// 파일을 먼저 지운다. Airflow API로 DAG를 먼저 지우면, 파일을 지우기 전에 DAG processor가 파일을
+		// 다시 읽어 DAG가 다시 등록될 수 있다.
 		File dagFile = dagFile(wfModelId);
 		s_logger.debug("trying to remove airflow dag file: {}", dagFile);
 		if ( dagFile.isFile() ) {
@@ -472,7 +469,7 @@ public class AirflowWorkflowEngine implements WorkflowEngine, InitializingBean {
 	 * 주어진 DAG id의 DAG 파일 경로를 반환한다.
 	 * <p>
 	 * DAG id는 {@link DagSpec}과 같은 규칙(Python 식별자)이어야 하고, 결과 경로는 DAG 폴더 바로 아래여야 한다.
-	 * 2026-11-04 이전에는 삭제할 때 id를 검사하지 않고 경로를 만들었다.
+	 * 배포와 삭제 모두 이 메소드로 경로를 만든다.
 	 *
 	 * @throws IllegalArgumentException	DAG id가 Python 식별자가 아닌 경우.
 	 */
@@ -485,7 +482,7 @@ public class AirflowWorkflowEngine implements WorkflowEngine, InitializingBean {
 		return file;
 	}
 	
-	// DAG id를 path segment로 인코딩한 '<airflow>/dags/<id>' URL. 2026-11-04 이전에는 일부 URL만 인코딩했다.
+	// DAG id를 path segment로 인코딩한 '<airflow>/dags/<id>' URL.
 	private String dagUrl(String dagId) {
 		return String.format("%s/dags/%s", m_airflowUrl, encodePathSegment(dagId));
 	}
@@ -546,7 +543,6 @@ public class AirflowWorkflowEngine implements WorkflowEngine, InitializingBean {
 	}
 	
 	// Airflow의 404는 대상이 없다는 뜻이므로 ResourceNotFoundException으로 바꾼다(컨트롤러가 404로 응답).
-	// 2026-11-04 이전에는 RESTfulRemoteException으로 그대로 올라가 500이 되었다.
 	private static RuntimeException toNotFoundIf404(RESTfulException e, String type, String id) {
 		return ( e.getHttpStatusCode() == 404 ) ? new ResourceNotFoundException(type, id) : e;
 	}
@@ -572,9 +568,7 @@ public class AirflowWorkflowEngine implements WorkflowEngine, InitializingBean {
 	 * DagRun 생성 요청 본문({@code POST /dags/{dag_id}/dagRuns}).
 	 * <p>
 	 * run id는 시작 시각과 무작위 접미어로 만들어 같은 시각에 두 번 시작해도 충돌하지 않게 하고, logical_date와
-	 * 같은 시각을 쓴다. 2026-11-04 이전에는 epoch 밀리초만 써서 같은 밀리초에 시작하면 409로 실패했고,
-	 * logical_date는 Instant.now()를 다시 불러 run id와 시각이 달랐다. 2026-11-05 이전 이름은
-	 * {@code StartWorkflowRequest}(getter {@code getDagRunIdJackson})였다.
+	 * 같은 시각을 쓴다.
 	 */
 	private record StartDagRunRequest(@JsonProperty("dag_run_id") String dagRunId,
 									@JsonProperty("logical_date") String logicalDate) {
@@ -603,11 +597,11 @@ public class AirflowWorkflowEngine implements WorkflowEngine, InitializingBean {
 		String url = wfId.toUrl(m_airflowUrl);
 		
 		// 호출자는 목록·조회·실행 응답의 DagRun 노드(DAGRunResponse)를 넘기므로 그대로 쓰고, 상태가 없는 노드만
-		// 다시 읽는다. 2026-11-04 이전에는 항상 다시 GET해서 run 하나당 요청이 2번(목록에서는 run마다) 나갔다.
+		// 다시 읽는다. 그래서 목록에서도 run마다 GET을 다시 보내지 않는다.
 		JsonNode dagRun = dagRunNode.has("state") ? dagRunNode : getDagRunNode(wfId);
 		
 		WorkflowStatus status = toDagRunStatus(dagRun.path("state").asText(null));
-		// queued_at은 null일 수 있다(2026-11-04 이전에는 Instant.parse("null")로 실패해 그 run이 목록에서 빠졌다).
+		// queued_at은 null일 수 있다. 이때도 그 run을 목록에서 빼지 않는다.
 		LocalDateTime creationTime = parseTime(dagRun, "queued_at");
 		LocalDateTime startTime = parseTime(dagRun, "start_date");
 		LocalDateTime finishTime = parseTime(dagRun, "end_date");
@@ -634,8 +628,6 @@ public class AirflowWorkflowEngine implements WorkflowEngine, InitializingBean {
 	
 	/**
 	 * Airflow DagRun 상태({@code queued}/{@code running}/{@code success}/{@code failed})를 바꾼다.
-	 * <p>
-	 * 2026-11-04 이전에는 DagRun 상태가 아닌 {@code timeout}·{@code scheduled}도 다뤘고, 같은 switch가 두 곳에 있었다.
 	 */
 	static WorkflowStatus toDagRunStatus(@Nullable String state) {
 		if ( state == null ) {
@@ -665,8 +657,6 @@ public class AirflowWorkflowEngine implements WorkflowEngine, InitializingBean {
 	 *   <li>{@code failed}, {@code upstream_failed} → {@code FAILED}</li>
 	 *   <li>그 밖({@code removed} 등) → {@code UNKNOWN}</li>
 	 * </ul>
-	 * 2026-11-04 이전에는 {@code upstream_failed}를 {@code NOT_STARTED}로, 재시도·연기 상태를 {@code UNKNOWN}으로
-	 * 보았고, 모르는 상태를 {@code System.out}으로 출력했다.
 	 */
 	static WorkflowStatus toTaskStatus(@Nullable String state) {
 		if ( state == null || state.equals("none") ) {
@@ -762,8 +752,7 @@ public class AirflowWorkflowEngine implements WorkflowEngine, InitializingBean {
 	 * 초기화된 Airflow 클라이언트를 반환한다. 처음 부를 때 {@link #connect()}로 초기화한다.
 	 * <p>
 	 * 초기화는 한 번만 실행되고(동시에 불려도), 모든 단계가 성공했을 때만 결과를 기억한다. 실패하면 예외를 던지고
-	 * 다음 호출에서 다시 시도한다. 2026-11-04 이전에는 인증 없는 클라이언트를 먼저 필드에 넣은 뒤 토큰을 받아서,
-	 * 그 뒤 단계가 실패하면 미완성 클라이언트가 남아 다시 초기화하지 않았고, 동기화도 없었다.
+	 * 다음 호출에서 다시 시도한다. 그래서 단계 중간에 실패해도 미완성 클라이언트가 남지 않는다.
 	 */
 	private HttpRESTfulClient getRestfulClient() {
 		HttpRESTfulClient client = m_restfulClient;
@@ -781,7 +770,7 @@ public class AirflowWorkflowEngine implements WorkflowEngine, InitializingBean {
 	// 토큰 발급 → 인증 클라이언트 생성 → 'mdt_manager_url' 변수 재등록. 하나라도 실패하면 예외를 던진다.
 	private HttpRESTfulClient connect() {
 		try {
-			// 기본은 서버 인증서를 검증한다. 2026-11-04 이전에는 항상 trust-all 클라이언트를 썼다.
+			// 기본은 서버 인증서를 검증한다.
 			OkHttpClient baseClient = m_conf.isInsecureTls()
 									? OkHttpClientUtils.newTrustAllOkHttpClientBuilder().build()
 									: OkHttpClientUtils.newClient();
@@ -799,7 +788,7 @@ public class AirflowWorkflowEngine implements WorkflowEngine, InitializingBean {
 			m_loginClient = loginClient;
 			m_jwtToken = token;
 
-			// 토큰을 헤더에 고정하지 않고 요청마다 붙이며, 401을 받으면 토큰을 다시 받아 한 번 재시도한다(D2).
+			// 토큰을 헤더에 고정하지 않고 요청마다 붙이며, 401을 받으면 토큰을 다시 받아 한 번 재시도한다.
 			OkHttpClient authClient = baseClient.newBuilder()
 												.addInterceptor(this::addBearerToken)
 												.authenticator(this::reauthenticate)

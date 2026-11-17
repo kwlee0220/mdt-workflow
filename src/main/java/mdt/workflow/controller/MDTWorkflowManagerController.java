@@ -301,7 +301,6 @@ public class MDTWorkflowManagerController {
 	@DeleteMapping("/workflows")
     @ResponseStatus(HttpStatus.NO_CONTENT)
 	public void removeWorkflowAll(@RequestParam(name="model", required=false) String modelId) {
-    	// 2026-11-07 이전 파라미터 이름은 'modelFilter'였다(별칭 없음, 검토 A5).
     	if ( modelId != null ) {
     		m_wfManager.removeWorkflowsOfModel(modelId);
     	}

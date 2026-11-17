@@ -25,8 +25,7 @@ import mdt.workflow.config.WorkflowManagerConfiguration;
  * 예측한다.
  * <p>
  * 주어진 Submodel 참조로 Submodel을 읽어 JSON으로 예측 서비스에 POST하고, 응답 본문을 실행시간(초, 숫자)으로 읽는다.
- * HTTP 클라이언트와 MDT 연결은 처음 쓸 때 한 번 만들어 재사용한다. 2026-11-04 이전에는 컨트롤러가 요청마다 둘 다
- * 새로 만들었다.
+ * HTTP 클라이언트와 MDT 연결은 처음 쓸 때 한 번 만들어 재사용한다.
  *
  * @author Kang-Woo Lee (ETRI)
  */

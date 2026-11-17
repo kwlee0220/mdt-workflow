@@ -20,8 +20,6 @@ usage() {
     echo "  $0 --repo myrepo --latest            # latest 태그도 함께 푸시"
 }
 
-# 2026-11-07 이전에는 set -e와 인자 검증이 없었다. 값 없는 --repo·--tag는 무한 루프에 빠졌고, 모르는 옵션은
-# 조용히 무시했으며, 태그가 빈 채로 진행하고 docker tag 실패도 검사하지 않았다(검토 D2·D3).
 IMAGE_NAME="${MDT_IMAGE_NAME:-mdt-workflow}"
 REPO=""
 TAG=""

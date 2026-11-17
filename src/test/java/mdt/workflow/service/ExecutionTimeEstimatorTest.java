@@ -10,13 +10,13 @@ import mdt.workflow.config.WorkflowManagerConfiguration;
 
 
 /**
- * mdt-workflow 검토 D15·D18 회귀 테스트.
+ * 예측 서비스가 설정되지 않은 경우의 동작과 Airflow TLS 인증서 검증의 기본값을 확인한다.
  *
  * @author Kang-Woo Lee (ETRI)
  */
 public class ExecutionTimeEstimatorTest {
 	/**
-	 * 예측 서비스 주소가 없으면 UnsupportedOperationException(컨트롤러 501)이다. 2026-11-04 이전에는 NPE였다.
+	 * 예측 서비스 주소가 없으면 UnsupportedOperationException(컨트롤러 501)이다.
 	 */
 	@Test
 	public void unconfiguredEstimatorIsUnsupported() {
@@ -26,7 +26,7 @@ public class ExecutionTimeEstimatorTest {
 	}
 
 	/**
-	 * Airflow TLS 인증서 검증은 기본으로 켜져 있다(D18).
+	 * Airflow TLS 인증서 검증은 기본으로 켜져 있다.
 	 */
 	@Test
 	public void tlsVerificationIsOnByDefault() {

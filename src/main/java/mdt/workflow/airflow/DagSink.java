@@ -5,8 +5,6 @@ import utils.Preconditions;
 /**
  * DAG 코드의 operator {@code outputs} dict에 들어가는 출력 하나. task 출력을 기록할 MDT 요소를 가리킨다
  * ({@code "<id>": mdtpy.airflow.sink(<참조 표현식>)}).
- * <p>
- * 2026-11-05 이전에는 입력 인자와 같은 계층의 {@code OperatorArgumentSpec.SinkArgument}였다(별칭 없음).
  *
  * @author Kang-Woo Lee (ETRI)
  */

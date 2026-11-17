@@ -12,10 +12,6 @@ package mdt.workflow;
  * {@link mdt.workflow.service.MDTWorkflowManager}가 모델을 저장한 뒤 {@link #deploy}를 부르고, 이것이 실패하면 저장을
  * 되돌린다. 즉 배포는 알림이 아니라 등록의 필수 단계다. 모델 저장은 이 SPI의 일이 아니다(엔진은 모델 저장소를 모른다).
  * 현재 구현은 {@link mdt.workflow.service.AirflowWorkflowEngine}뿐이다.
- * <p>
- * 2026-11-05 이전 이름은 {@code WorkflowInstanceManagerProvider}였고(구현 클래스는 {@code AirflowWorkflowManager}),
- * 메소드는 {@code onWorkflowModelAdded}/{@code onWorkflowModelRemoved}/{@code getWorkflowScript(String modelId)}였다
- * (별칭 없음).
  *
  * @author Kang-Woo Lee (ETRI)
  */

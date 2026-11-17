@@ -20,7 +20,7 @@ import mdt.workflow.config.AirflowWorkflowManagerConfiguration;
 
 /**
  * {@link AirflowWorkflowEngine}의 Airflow 클라이언트 초기화가 실패하면 미완성 클라이언트를 남기지 않고
- * 다음 호출에서 처음부터 다시 초기화하는지 확인한다(mdt-workflow 검토 D3).
+ * 다음 호출에서 처음부터 다시 초기화하는지 확인한다.
  *
  * @author Kang-Woo Lee (ETRI)
  */

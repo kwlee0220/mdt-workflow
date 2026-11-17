@@ -63,7 +63,6 @@ public class MDTWorkflowManager implements WorkflowManager {
 	}
 	
 	// 후처리 실패의 원래 예외 유형을 유지한다(잘못된 모델의 IllegalArgumentException은 400, 대상 없음은 404).
-	// 2026-11-04 이전에는 모두 RuntimeException으로 감싸 500이 되었다.
 	private static RuntimeException toPostProcessFailure(WorkflowModel wfModel, Throwable e) {
 		Throwable cause = Throwables.unwrapThrowable(e);
 		if ( cause instanceof RuntimeException re ) {
@@ -130,7 +129,7 @@ public class MDTWorkflowManager implements WorkflowManager {
 			m_engine.undeploy(wfModelId);
 		}
 		catch ( Exception e ) {
-			// 2026-11-04 이전에는 로그도 없이 무시해서, Airflow에 DAG가 남아도 알 수 없었다.
+			// 모델 삭제는 되돌리지 않되, Airflow에 DAG가 남았음을 알 수 있도록 WARN 로그로 남긴다.
 			s_logger.warn("failed to clean up the removed workflow model in the workflow engine: id={}, cause={}",
 							wfModelId, "" + e);
 		}
@@ -139,8 +138,8 @@ public class MDTWorkflowManager implements WorkflowManager {
 	/**
 	 * 모든 워크플로우 모델을 {@link #removeWorkflowModel(String)}로 하나씩 삭제한다.
 	 * <p>
-	 * 한 모델의 삭제가 실패해도 나머지는 계속 삭제하고, 실패는 WARN 로그로 남긴다. 2026-11-04 이전에는 DB 행만
-	 * 지우고 엔진 쪽(Airflow DAG 파일 등)을 정리하지 않았으며 오류도 삼켰다.
+	 * 각 모델의 DB 행과 엔진 쪽(Airflow DAG 파일 등)을 함께 정리한다. 한 모델의 삭제가 실패해도 나머지는 계속
+	 * 삭제하고, 실패는 WARN 로그로 남긴다.
 	 */
 	@Override
 	public void removeWorkflowModelAll() {
@@ -156,7 +155,7 @@ public class MDTWorkflowManager implements WorkflowManager {
 	
 	/**
 	 * 저장된 모델을 엔진용 산출물(Airflow DAG 코드)로 렌더링한다. 호출할 때마다 새로 만들므로, 템플릿이 바뀌었다면
-	 * 배포된 DAG 파일과 다를 수 있다. 2026-11-07 이전 이름은 {@code getWorkflowScript}였다(별칭 없음).
+	 * 배포된 DAG 파일과 다를 수 있다.
 	 * <p>
 	 * 배포 상태와 상관없이 지금 저장된 모델로 만든다.
 	 *

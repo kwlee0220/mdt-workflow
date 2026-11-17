@@ -103,7 +103,7 @@ public class MDTWorkflowManagerTest {
 	}
 
 	/**
-	 * 후처리 실패는 원래 예외 유형 그대로 나간다(mdt-workflow 검토 D7). 2026-11-04 이전에는 RuntimeException으로 감쌌다.
+	 * 후처리 실패는 원래 예외 유형 그대로 나가며 RuntimeException으로 감싸지 않는다.
 	 */
 	@Test
 	public void postProcessingFailureKeepsExceptionType() {
@@ -112,7 +112,7 @@ public class MDTWorkflowManagerTest {
 	}
 
 	/**
-	 * 모든 모델 삭제는 모델마다 엔진 쪽 정리를 부르고, 한 모델의 정리가 실패해도 나머지를 계속 지운다(검토 D9).
+	 * 모든 모델 삭제는 모델마다 엔진 쪽 정리를 부르고, 한 모델의 정리가 실패해도 나머지를 계속 지운다.
 	 */
 	@Test
 	public void removeAllCleansUpEveryModel() {
@@ -126,7 +126,7 @@ public class MDTWorkflowManagerTest {
 	}
 
 	/**
-	 * 스크립트 조회는 저장된 모델을 읽어 엔진의 render에 넘긴다(검토 A3: 엔진은 모델 저장소를 모른다).
+	 * 스크립트 조회는 저장된 모델을 읽어 엔진의 render에 넘긴다(엔진은 모델 저장소를 모른다).
 	 */
 	@Test
 	public void renderWorkflowScriptRendersStoredModel() {

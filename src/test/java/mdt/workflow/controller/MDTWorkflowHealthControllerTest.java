@@ -10,7 +10,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 
 /**
- * Docker 이미지의 HEALTHCHECK가 쓰는 {@code GET /health}를 확인한다(mdt-workflow Docker 검토 I5).
+ * Docker 이미지의 HEALTHCHECK가 쓰는 {@code GET /health}를 확인한다.
  *
  * @author Kang-Woo Lee (ETRI)
  */

@@ -21,8 +21,8 @@ import mdt.workflow.service.MDTWorkflowManager;
 
 
 /**
- * 셸 자동완성용 워크플로우 id 목록이 {@code ?status=}로 상태를 거르는지 확인한다(mdt-workflow 검토 A6).
- * 모르는 상태는 400이다(검토 D16, 2026-11-04 이전에는 NullPointerException(500)이었다).
+ * 셸 자동완성용 워크플로우 id 목록이 {@code ?status=}로 상태를 거르는지 확인한다.
+ * 모르는 상태는 400이다.
  *
  * @author Kang-Woo Lee (ETRI)
  */

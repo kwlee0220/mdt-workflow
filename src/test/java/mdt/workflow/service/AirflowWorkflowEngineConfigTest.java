@@ -12,7 +12,7 @@ import mdt.workflow.config.AirflowWorkflowManagerConfiguration;
 
 
 /**
- * {@link AirflowWorkflowEngine}가 Airflow 계정 설정을 필수로 요구하는지 확인한다(mdt-workflow 검토 D1).
+ * {@link AirflowWorkflowEngine}가 Airflow 계정 설정을 필수로 요구하는지 확인한다.
  * <p>
  * 계정 검사는 Airflow에 접속하기 전에 하므로 실행 중인 Airflow 없이 확인할 수 있다.
  *

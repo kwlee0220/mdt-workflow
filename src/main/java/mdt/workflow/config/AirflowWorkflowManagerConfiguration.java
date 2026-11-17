@@ -80,7 +80,7 @@ public class AirflowWorkflowManagerConfiguration {
 	 * {@code false}).
 	 * <p>
 	 * 사설·자체 서명 인증서를 쓰는 시험 환경에서만 {@code true}로 둔다. 켜면 중간자가 Airflow 계정과 JWT를 가로챌 수
-	 * 있다. 2026-11-04 이전에는 항상 검증하지 않았다.
+	 * 있다.
 	 *
 	 * @return	인증서 검증을 끄면 {@code true}.
 	 */

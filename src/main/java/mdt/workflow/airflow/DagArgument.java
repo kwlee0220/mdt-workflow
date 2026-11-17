@@ -12,10 +12,6 @@ import utils.Preconditions;
  *   <li>{@link TaskOutput}: 앞 task의 출력({@code mdtpy.airflow.task_output})</li>
  * </ul>
  * 출력은 별도 타입 {@link DagSink}이다. 인자 id는 Python 식별자여야 한다.
- * <p>
- * 2026-11-05 이전에는 이름이 {@code OperatorArgumentSpec}이었고(중첩 클래스 {@code ReferenceArgument}·
- * {@code LiteralArgument}·{@code TaskOutputArgument}가 mdt-client {@code ArgumentSpec}의 중첩 클래스와 이름이 같았다),
- * 출력({@code SinkArgument})도 같은 계층에 있었다(별칭 없음).
  *
  * @author Kang-Woo Lee (ETRI)
  */

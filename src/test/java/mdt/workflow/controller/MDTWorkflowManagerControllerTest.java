@@ -9,7 +9,7 @@ import mdt.model.ResourceNotFoundException;
 
 
 /**
- * 컨트롤러 예외 처리의 상태 코드(mdt-workflow 검토 D7).
+ * 컨트롤러 예외 처리의 상태 코드를 확인한다.
  *
  * @author Kang-Woo Lee (ETRI)
  */

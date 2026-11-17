@@ -26,7 +26,6 @@ import utils.stream.KeyValueFStream;
  * 파일 경로는 시스템 속성 {@code env.file}, 환경 변수 {@code ENV_FILE}, 기본값 {@code config/env.file} 순으로 정한다.
  * 읽은 변수는 INFO 로그로 남기되, 키 이름에 {@code PASS}/{@code SECRET}/{@code TOKEN}/{@code CREDENTIAL}이 들어간
  * 값은 {@code ****}로, 그 밖의 값은 URL 안의 비밀번호({@code password=…}, {@code user:pw@})를 가려 출력한다.
- * 2026-11-04 이전에는 값을 그대로 출력해 비밀번호가 로그에 남았다.
  *
  * @author Kang-Woo Lee (ETRI)
  */
@@ -47,7 +46,7 @@ public class EnvironmentVariablePostProcessor implements EnvironmentPostProcesso
         try {
             File envFile = new File(path);
             if ( !explicit && !envFile.isFile() ) {
-                // 기본 경로의 파일은 없어도 된다. 2026-11-04 이전에는 매번 스택 트레이스와 함께 ERROR로 남겼다.
+                // 기본 경로의 파일은 없어도 되므로 INFO로만 남긴다.
                 s_deferredLog.info("no env file at the default location: " + envFile.getAbsolutePath());
             }
             else {

@@ -14,7 +14,7 @@ import mdt.workflow.domain.JpaWorkflowModel;
 
 
 /**
- * {@link JpaWorkflowModel}의 저장 형식(json_model text)과 파생 쿼리를 인메모리 H2로 확인한다(mdt-workflow 검토 I9).
+ * {@link JpaWorkflowModel}의 저장 형식(json_model text)과 파생 쿼리를 인메모리 H2로 확인한다.
  *
  * @author Kang-Woo Lee (ETRI)
  */

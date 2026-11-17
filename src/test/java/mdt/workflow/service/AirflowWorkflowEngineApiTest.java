@@ -21,7 +21,7 @@ import mdt.workflow.config.AirflowWorkflowManagerConfiguration;
 
 
 /**
- * {@link AirflowWorkflowEngine}의 Airflow REST 호출을 MockWebServer로 확인한다(mdt-workflow 검토 D4–D7).
+ * {@link AirflowWorkflowEngine}의 Airflow REST 호출을 MockWebServer로 확인한다.
  *
  * @author Kang-Woo Lee (ETRI)
  */
@@ -71,7 +71,7 @@ public class AirflowWorkflowEngineApiTest {
 	}
 
 	/**
-	 * 전체 삭제는 MDT DAG의 실행만 지우고(D4), 목록은 모든 페이지를 읽는다(D5).
+	 * 전체 삭제는 MDT DAG의 실행만 지우고, 목록은 모든 페이지를 읽는다.
 	 */
 	@Test
 	public void removeAllDeletesOnlyMdtRunsAcrossPages() throws Exception {
@@ -120,7 +120,7 @@ public class AirflowWorkflowEngineApiTest {
 	}
 
 	/**
-	 * Airflow의 404는 ResourceNotFoundException이다(D7).
+	 * Airflow의 404는 ResourceNotFoundException이다.
 	 */
 	@Test
 	public void missingDagRunIsResourceNotFound() {
@@ -133,15 +133,15 @@ public class AirflowWorkflowEngineApiTest {
 
 	@Test
 	public void unsupportedOperationsAndToString() {
-		// suspend/resume은 인터페이스 기본 구현(검토 A2 (a))
+		// suspend/resume은 인터페이스 기본 구현이라 UnsupportedOperationException이다.
 		assertThrows(UnsupportedOperationException.class, () -> m_manager.suspendWorkflow("a__r1"));
 		assertThrows(UnsupportedOperationException.class, () -> m_manager.resumeWorkflow("a__r1"));
-		// D6: 이전에는 MissingFormatArgumentException
+		// toString()은 형식 오류 없이 Airflow 주소를 담는다.
 		assertTrue(m_manager.toString().startsWith("AirflowWorkflowEngine[airflow="), m_manager.toString());
 	}
 
 	/**
-	 * 로그 조회는 task의 최신 시도 로그를 읽어 한 항목당 한 줄로 바꾼다(검토 A2, 방식 (1): podName = task id).
+	 * 로그 조회는 task의 최신 시도 로그를 읽어 한 항목당 한 줄로 바꾼다({@code podName}은 task id다).
 	 */
 	@Test
 	public void getWorkflowLogReadsLatestTryOfTask() throws Exception {
@@ -193,8 +193,8 @@ public class AirflowWorkflowEngineApiTest {
 	}
 
 	/**
-	 * DAG 파일은 임시 파일 없이 완성된 채로 생기고(D11), 삭제는 파일을 먼저 지운 뒤 Airflow DAG를 지운다(D11).
-	 * 잘못된 id로는 DAG 파일 경로를 만들지 않는다(D19).
+	 * DAG 파일은 임시 파일 없이 완성된 채로 생기고, 삭제는 파일을 먼저 지운 뒤 Airflow DAG를 지운다.
+	 * 잘못된 id로는 DAG 파일 경로를 만들지 않는다.
 	 */
 	@Test
 	public void dagFileIsWrittenAtomicallyAndRemovedBeforeApiDelete() throws Exception {
@@ -220,13 +220,13 @@ public class AirflowWorkflowEngineApiTest {
 	}
 
 	/**
-	 * 시작 요청의 run id는 시작 시각 + 무작위 접미어이고 logical_date와 같은 시각이다(D13).
-	 * 중지는 queued run도 실패로 바꾸고, task PATCH 본문은 Airflow API의 'new_state'다(D14).
+	 * 시작 요청의 run id는 시작 시각 + 무작위 접미어이고 logical_date와 같은 시각이다.
+	 * 중지는 queued run도 실패로 바꾸고, task PATCH 본문은 Airflow API의 'new_state'다.
 	 */
 	@Test
 	public void startAndStopRequests() throws Exception {
 		m_server.enqueue(json(200, "{\"is_paused\": false}"));
-		// 실행 응답은 DAGRunResponse 전체이므로 DagRun을 다시 읽지 않는다(I6).
+		// 실행 응답은 DAGRunResponse 전체이므로 DagRun을 다시 읽지 않는다.
 		m_server.enqueue(json(200, "{\"dag_run_id\": \"r1\", \"state\": \"queued\", \"queued_at\": null}"));
 		m_server.enqueue(json(200, "{\"task_instances\": []}"));
 		m_manager.startWorkflow("wf1");
@@ -299,7 +299,7 @@ public class AirflowWorkflowEngineApiTest {
 	}
 
 	/**
-	 * Airflow 상태 매핑(D12).
+	 * Airflow 상태 매핑.
 	 */
 	@Test
 	public void airflowStatesMapToWorkflowStatus() {

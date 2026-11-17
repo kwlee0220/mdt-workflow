@@ -26,8 +26,8 @@ REST API는 `/workflow-manager`(관리)와 `/list`(식별자 목록) 아래에 �
    `runId`로 다시 보내도 실행은 하나만 생긴다. `runId`가 없으면 서버가 시작 시각과 무작위 접미어로 만든다.
 3. **조회·중지·삭제** (`/workflow-manager/workflows/...`): Airflow REST API v2로 DagRun과 TaskInstance를 읽어
    워크플로우 상태로 바꾼다. 태그 `mdt`가 붙은 DAG(이 서버가 만든 DAG)만 다룬다.
-   Airflow에 대응 기능이 없는 일시정지·재개 API는 없다(2026-11-05에 `PUT .../suspend`·`/resume`을 지웠다).
-   로그 조회(`GET /workflow-manager/workflows/{wfId}/log/{taskId}`)는 경로의 마지막 값(이전 이름 `podName`)을 task id로
+   Airflow에 대응 기능이 없는 일시정지·재개 API는 없다.
+   로그 조회(`GET /workflow-manager/workflows/{wfId}/log/{taskId}`)는 경로의 마지막 값을 task id로
    해석해, 그 task의 최신 시도 로그를 한 줄에 한 항목(`<시각> <레벨> <logger>: <메시지>`)으로 돌려준다. task가 없거나
    아직 실행되지 않았으면 404다.
 4. **모델 삭제** (`DELETE /workflow-manager/models/{id}`): DB 행, DAG 파일, Airflow DAG를 지운다.

@@ -70,7 +70,7 @@ public class PythonScriptSpecTest {
 	}
 
 	/**
-	 * DAG 템플릿이 입력·출력 dict 항목을 {@code toPythonDictEntry()}로 렌더링한다(mdt-workflow 검토 N2).
+	 * DAG 템플릿이 입력·출력 dict 항목을 {@code toPythonDictEntry()}로 렌더링한다.
 	 */
 	@Test
 	public void dagTemplateRendersInputAndOutputEntries() throws IOException {

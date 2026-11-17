@@ -6,8 +6,6 @@ import java.util.Set;
  * 문자열이 Python 3 식별자(ASCII 글자·숫자·밑줄, 첫 글자는 숫자가 아님, 예약어 아님)인지 확인한다.
  * <p>
  * DAG id·task id·인자 id처럼 생성된 Python 코드나 DAG 파일 이름에 그대로 쓰이는 값을 검사할 때 쓴다.
- * <p>
- * 2026-11-05 이전 이름은 {@code PythonIdentifierUtil.isValidPythonIdentifier}였다(별칭 없음).
  *
  * @author Kang-Woo Lee (ETRI)
  */

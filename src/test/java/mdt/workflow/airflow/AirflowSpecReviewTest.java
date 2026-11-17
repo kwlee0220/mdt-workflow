@@ -12,13 +12,14 @@ import mdt.workflow.model.TaskDescriptor;
 
 
 /**
- * mdt-workflow 검토 D17·D20 회귀 테스트.
+ * operator spec 생성의 세부 규칙(비유한 실수 리터럴, 무시되는 실행 옵션, task type 등록표, 필수 option,
+ * 공통 값 복사, 컬렉션 불변성)을 확인한다.
  *
  * @author Kang-Woo Lee (ETRI)
  */
 public class AirflowSpecReviewTest {
 	/**
-	 * 무한대·NaN은 Python에서 정의된 표현으로 출력한다(D17).
+	 * 무한대·NaN은 Python에서 정의된 표현으로 출력한다.
 	 */
 	@Test
 	public void nonFiniteNumbersBecomeValidPython() throws Exception {
@@ -27,7 +28,7 @@ public class AirflowSpecReviewTest {
 	}
 
 	/**
-	 * Airflow operator가 받지 못하는 timeout·poll 옵션을 찾는다(D20). RESTfulRpcSpec만 timeout을 전달한다.
+	 * Airflow operator가 받지 못하는 timeout·poll 옵션을 찾는다. RESTfulRpcSpec만 timeout을 전달한다.
 	 */
 	@Test
 	public void ignoredExecutionOptionsAreDetected() {
@@ -46,7 +47,7 @@ public class AirflowSpecReviewTest {
 	}
 
 	/**
-	 * task type 등록표(I3)와 필수 option 검사(I2).
+	 * task type 등록표와 필수 option 검사.
 	 */
 	@Test
 	public void registryAndRequiredOptions() {
@@ -64,7 +65,7 @@ public class AirflowSpecReviewTest {
 	}
 
 	/**
-	 * 공통 값(입력·출력·의존·trigger rule)은 {@code AbstractBuilder.fromTask}가 옮긴다(I1).
+	 * 공통 값(입력·출력·의존·trigger rule)은 {@code AbstractBuilder.fromTask}가 옮긴다.
 	 */
 	@Test
 	public void fromTaskCopiesCommonFields() {
@@ -83,7 +84,7 @@ public class AirflowSpecReviewTest {
 	}
 
 	/**
-	 * spec은 builder의 컬렉션을 공유하지 않고, getter 결과는 고칠 수 없다(I7).
+	 * spec은 builder의 컬렉션을 공유하지 않고, getter 결과는 고칠 수 없다.
 	 */
 	@Test
 	public void specCollectionsAreImmutableCopies() {

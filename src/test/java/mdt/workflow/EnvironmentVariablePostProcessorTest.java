@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 
 
 /**
- * env 파일 변수의 로그용 값에서 비밀번호가 가려지는지 확인한다(mdt-workflow 검토 D10).
+ * env 파일 변수의 로그용 값에서 비밀번호가 가려지는지 확인한다.
  *
  * @author Kang-Woo Lee (ETRI)
  */

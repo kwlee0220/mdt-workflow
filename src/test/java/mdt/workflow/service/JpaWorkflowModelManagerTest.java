@@ -11,7 +11,7 @@ import mdt.workflow.repository.JpaWorkflowModelRepository;
 
 
 /**
- * 없는 모델을 삭제하면 {@link ResourceNotFoundException}이다(mdt-workflow 검토 D8).
+ * 없는 모델을 삭제하면 {@link ResourceNotFoundException}이다.
  *
  * @author Kang-Woo Lee (ETRI)
  */

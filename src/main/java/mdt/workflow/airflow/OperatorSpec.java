@@ -56,8 +56,8 @@ public abstract class OperatorSpec {
 		Preconditions.checkNotNullArgument(builder.m_triggerRule, "trigger rule must not be null");
 
 		m_taskId = builder.m_taskId;
-		// builder의 컬렉션을 복사해 불변으로 보관한다. 2026-11-04 이전에는 그대로 공유해서 builder를 다시 쓰거나
-		// getter 결과를 고치면 이미 만든 spec이 바뀌었다. 의존 task는 선언 순서를 유지한다.
+		// builder의 컬렉션을 복사해 불변으로 보관한다. builder를 다시 쓰거나 getter 결과를 고쳐도 이미 만든
+		// spec은 바뀌지 않는다. 의존 task는 선언 순서를 유지한다.
 		m_inputs = List.copyOf(builder.m_inputs);
 		m_outputs = List.copyOf(builder.m_outputs);
 		m_dependencies = Collections.unmodifiableSet(new LinkedHashSet<>(builder.m_dependencies));
@@ -169,8 +169,8 @@ public abstract class OperatorSpec {
 	
 	public static OperatorSpec from(TaskDescriptor task) {
 		OperatorSpec spec = fromTaskType(task);
-		// Java 태스크로 실행할 때는 쓰이는 옵션이 Airflow에서는 조용히 무시되었다(2026-11-04 이전). mdtpy operator가
-		// 받을 때까지는 DAG를 만들 때 경고를 남긴다.
+		// Java 태스크로 실행할 때 쓰이는 옵션 중 mdtpy operator에 넘기지 못하는 것이 있으면, 조용히
+		// 무시되지 않도록 DAG를 만들 때 경고를 남긴다.
 		List<String> ignored = getIgnoredExecutionOptions(task, spec);
 		if ( !ignored.isEmpty() ) {
 			s_logger.warn("task options are not supported by the Airflow operator and will be ignored: "
@@ -190,7 +190,7 @@ public abstract class OperatorSpec {
 	 * task type → spec 생성 함수 등록표. 새 task 유형은 여기에 한 줄을 더한다.
 	 * <p>
 	 * Java task 클래스가 없는 Airflow 전용 유형({@link TaskDescriptors#PYTHON_SCRIPT_TASK_TYPE})은 type 문자열 상수로
-	 * 등록한다. 2026-11-04 이전에는 if-else 연쇄였다.
+	 * 등록한다.
 	 */
 	private static final Map<String,Function<TaskDescriptor,? extends OperatorSpec>> FACTORIES = Map.of(
 		AASOperationTask.class.getName(), AASOperationSpec::from,
@@ -341,7 +341,6 @@ public abstract class OperatorSpec {
 		 * task 기술자에서 모든 spec에 공통인 값(task id, 입력·출력 인자, 의존 task, trigger rule)을 채운다.
 		 * <p>
 		 * 하위 spec의 {@code from(TaskDescriptor)}는 이 메소드를 부른 뒤 자기 고유의 option만 처리한다.
-		 * 2026-11-04 이전에는 여섯 spec이 이 변환을 각자 반복했다.
 		 *
 		 * @param task	task 기술자.
 		 * @return	이 빌더.

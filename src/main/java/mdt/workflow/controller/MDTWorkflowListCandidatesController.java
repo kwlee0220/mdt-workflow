@@ -37,8 +37,7 @@ import mdt.workflow.service.MDTWorkflowManager;
  * <ul>
  *   <li>{@code GET /list/models}: 등록된 워크플로우 모델 id</li>
  *   <li>{@code GET /list/workflows?status=}: 워크플로우 인스턴스 id. {@code status}는 {@code all}(기본값)/
- *       {@code running}/{@code stopped}이며, 그 밖의 값은 400이다. 2026-11-07 이전에는 상태를 경로 변수로
- *       받았다({@code /list/workflows/running}, 별칭 없음).</li>
+ *       {@code running}/{@code stopped}이며, 그 밖의 값은 400이다.</li>
  * </ul>
  *
  * @author Kang-Woo Lee (ETRI)
@@ -100,7 +99,6 @@ public class MDTWorkflowListCandidatesController {
 								.toList();
     	}
     	else {
-    		// 2026-11-04 이전에는 wfIdList가 null로 남아 NullPointerException(500)이 났다.
     		throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
     											"unknown workflow status: " + type + " (all, running, stopped)");
     	}

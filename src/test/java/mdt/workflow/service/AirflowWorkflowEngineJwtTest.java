@@ -20,9 +20,9 @@ import mdt.workflow.config.AirflowWorkflowManagerConfiguration;
 
 
 /**
- * {@link AirflowWorkflowEngine}가 만료된 JWT를 다시 받아 요청을 재시도하는지 확인한다(mdt-workflow 검토 D2).
+ * {@link AirflowWorkflowEngine}가 만료된 JWT를 다시 받아 요청을 재시도하는지 확인한다.
  * <p>
- * 2026-11-04 이전에는 처음 받은 토큰을 헤더로 고정해서, 토큰이 만료되면 모든 호출이 401로 실패했다.
+ * 토큰은 헤더에 고정되지 않으므로, 토큰이 만료되어도 401 뒤에 다시 받은 토큰으로 호출이 성공한다.
  *
  * @author Kang-Woo Lee (ETRI)
  */
